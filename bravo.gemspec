@@ -58,7 +58,7 @@ Gem::Specification.new do |s|
     s.specification_version = 3
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
-      s.add_runtime_dependency(%q<savon>, ["~> 0.9.14"])
+      s.add_runtime_dependency(%q<savon>, ["~> 0.8.6"])
       s.add_development_dependency(%q<ruby-debug>, [">= 0"])
       s.add_development_dependency(%q<ruby-debug-base19>, ["= 0.11.24"])
       s.add_development_dependency(%q<ruby-debug19>, ["= 0.11.6"])
@@ -67,7 +67,7 @@ Gem::Specification.new do |s|
       s.add_development_dependency(%q<jeweler>, ["~> 1.5.1"])
       s.add_development_dependency(%q<rcov>, [">= 0"])
     else
-      s.add_dependency(%q<savon>, ["~> 0.9.14"])
+      s.add_dependency(%q<savon>, ["~> 0.8.6"])
       s.add_dependency(%q<ruby-debug>, [">= 0"])
       s.add_dependency(%q<ruby-debug-base19>, ["= 0.11.24"])
       s.add_dependency(%q<ruby-debug19>, ["= 0.11.6"])
@@ -77,7 +77,7 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<rcov>, [">= 0"])
     end
   else
-    s.add_dependency(%q<savon>, ["~> 0.9.14"])
+    s.add_dependency(%q<savon>, ["~> 0.8.6"])
     s.add_dependency(%q<ruby-debug>, [">= 0"])
     s.add_dependency(%q<ruby-debug-base19>, ["= 0.11.24"])
     s.add_dependency(%q<ruby-debug19>, ["= 0.11.6"])
