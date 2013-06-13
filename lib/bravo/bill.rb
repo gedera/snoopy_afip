@@ -41,6 +41,7 @@ module Bravo
 
     def authorize
       setup_bill
+      debugger
       response = client.fecae_solicitar do |soap|
         soap.namespaces["xmlns"] = "http://ar.gov.afip.dif.FEV1/"
         soap.body = body
@@ -89,6 +90,7 @@ module Bravo
     end
 
     def next_bill_number
+      debugger
       resp = client.fe_comp_ultimo_autorizado do |s|
         s.namespaces["xmlns"] = "http://ar.gov.afip.dif.FEV1/"
         s.body = {"Auth" => Bravo.auth_hash, "PtoVta" => Bravo.sale_point, "CbteTipo" => cbte_type}

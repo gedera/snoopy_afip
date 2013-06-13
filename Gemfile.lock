@@ -39,7 +39,7 @@ GEM
       ruby-debug-base19 (>= 0.11.19)
     ruby_core_source (0.1.4)
       archive-tar-minitar (>= 0.5.2)
-    savon (0.7.9)
+    savon (0.8.6)
       builder (>= 2.1.2)
       crack (>= 0.1.4)
 
@@ -54,4 +54,4 @@ DEPENDENCIES
   ruby-debug
   ruby-debug-base19 (= 0.11.24)
   ruby-debug19 (= 0.11.6)
-  savon (~> 0.7.8)
+  savon (= 0.8.6)
