@@ -1,3 +1,5 @@
+require 'active_support/time'
+
 module Bravo
   class AuthData
 
@@ -15,6 +17,7 @@ module Bravo
         opts = "-u #{Bravo.auth_url}"
         opts += " -k #{Bravo.pkey}"
         opts += " -c #{Bravo.cert}"
+        opts += " -i #{Bravo.cuit}"
 
         unless File.exists?(todays_datafile)
           %x(#{File.dirname(__FILE__)}/../../wsaa-client.sh #{opts})

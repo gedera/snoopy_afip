@@ -44,11 +44,12 @@ function MakeCMS()
 # Generate de CMS container (TRA + sign + certificate)
 #
 {
+  OPENSSL=$(which openssl)
   CMS=$(
     echo "$TRA" |
-    openssl cms -sign -in /dev/stdin -signer $CRT -inkey $KEY -nodetach \
+    $OPENSSL cms -sign -in /dev/stdin -signer $CRT -inkey $KEY -nodetach \
             -outform der |
-    openssl base64 -e
+    $OPENSSL base64 -e
   )
 }
 #------------------------------------------------------------------------------
@@ -147,7 +148,7 @@ EOF
 #[ $# -eq 0 ] && read -p "Service name: " SERVICE
 
 # Parse commandline arguments
-while getopts 'k:u:c:' OPTION
+while getopts 'k:u:c:i:' OPTION
 do
     case $OPTION in
     c)    CRT=$OPTARG
@@ -155,6 +156,8 @@ do
     k)    KEY=$OPTARG
         ;;
     u)    URL=$OPTARG
+        ;;
+    i)    CUIT=$OPTARG
         ;;
     esac
 done

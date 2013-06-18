@@ -35,5 +35,13 @@ module Bravo
 
   ALIC_IVA = [["03", 0], ["04", 0.105], ["05", 0.21], ["06", 0.27]]
 
-  BILL_TYPE = {:responsable_inscripto => {:responsable_inscripto => "01", :consumidor_final => "06", :exento => "06", :responsable_monotributo => "06"}}
+  BILL_TYPE = {
+      :responsable_inscripto => "01",
+      :consumidor_final => "06",
+      :exento => "06",
+      :responsable_monotributo => "06",
+      :nota_credito_a => "03",
+      :nota_credito_b => "08"
+    }
+
 end
