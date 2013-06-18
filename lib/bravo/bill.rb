@@ -7,7 +7,16 @@ module Bravo
 
     def initialize(attrs = {})
       Bravo::AuthData.fetch
-      @client         = Savon::Client.new(Bravo.service_url)
+      @client         = Savon::Client.new do
+        wsdl.document = Bravo.service_url
+        http.auth.ssl.cert_key_file = Bravo.pkey
+        http.auth.ssl.cert_file = Bravo.cert
+        http.auth.ssl.verify_mode = :none
+        http.read_timeout = 90
+        http.open_timeout = 90
+        http.headers = { "Accept-Encoding" => "gzip, deflate", "Connection" => "Keep-Alive" }
+        http.instance_eval { @ssl_context = OpenSSL::SSL::SSLContext.new(:TLSv1) }
+      end
       @body           = {"Auth" => Bravo.auth_hash}
       @net            = attrs[:net] || 0
       self.documento  = attrs[:documento] || Bravo.default_documento
@@ -31,7 +40,7 @@ module Bravo
     end
 
     def total
-      @total = net.zero? ? 0 : net + iva_sum
+      @total = net.zero? ? 0 : (net + iva_sum).round(2)
     end
 
     def iva_sum
@@ -40,19 +49,19 @@ module Bravo
     end
 
     def authorize
-      setup_bill
+      return false unless setup_bill
       debugger
-      response = client.fecae_solicitar do |soap|
+      response = client.request :fecae_solicitar do |soap|
         soap.namespaces["xmlns"] = "http://ar.gov.afip.dif.FEV1/"
         soap.body = body
       end
 
-      setup_response(response.to_hash)
+      return false unless setup_response(response.to_hash)
       self.authorized?
     end
 
     def setup_bill
-      today = Time.new.strftime('%Y%m%d')
+      today = Time.new.in_time_zone('Buenos Aires').strftime('%Y%m%d')
 
       fecaereq = {"FeCAEReq" => {
                     "FeCabReq" => Bravo::Bill.header(cbte_type),
@@ -78,7 +87,12 @@ module Bravo
       detail["ImpNeto"]   = net.to_f
       detail["ImpIVA"]    = iva_sum
       detail["ImpTotal"]  = total
-      detail["CbteDesde"] = detail["CbteHasta"] = next_bill_number
+
+      if bill_number = next_bill_number
+        detail["CbteDesde"] = detail["CbteHasta"] = bill_number
+      else
+        return false
+      end
 
       unless concepto == 0
         detail.merge!({"FchServDesde" => fch_serv_desde || today,
@@ -87,16 +101,21 @@ module Bravo
       end
 
       body.merge!(fecaereq)
+      true
     end
 
     def next_bill_number
+      begin
       debugger
-      resp = client.fe_comp_ultimo_autorizado do |s|
-        s.namespaces["xmlns"] = "http://ar.gov.afip.dif.FEV1/"
-        s.body = {"Auth" => Bravo.auth_hash, "PtoVta" => Bravo.sale_point, "CbteTipo" => cbte_type}
+        resp = client.request :fe_comp_ultimo_autorizado do
+          soap.namespaces["xmlns"] = "http://ar.gov.afip.dif.FEV1/"
+          soap.body = {"Auth" => Bravo.auth_hash, "PtoVta" => Bravo.sale_point, "CbteTipo" => cbte_type}
+        end
+        debugger
+        resp.to_hash[:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:cbte_nro].to_i + 1
+      rescue #Curl::Err::GotNothingError, Curl::Err::TimeoutError
+        nil
       end
-
-      resp.to_hash[:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:cbte_nro].to_i + 1
     end
 
     def authorized?
@@ -112,15 +131,23 @@ module Bravo
     end
 
     def setup_response(response)
-      # TODO: turn this into an all-purpose Response class
+      begin
 
-      result          = response[:fecae_solicitar_response][:fecae_solicitar_result]
+        result          = response[:fecae_solicitar_response][:fecae_solicitar_result]
 
-      response_header = result[:fe_cab_resp]
-      response_detail = result[:fe_det_resp][:fecae_det_response]
+        response_header = result[:fe_cab_resp]
+        response_detail = result[:fe_det_resp][:fecae_det_response]
 
-      request_header  = body["FeCAEReq"]["FeCabReq"].underscore_keys.symbolize_keys
-      request_detail  = body["FeCAEReq"]["FeDetReq"]["FECAEDetRequest"].underscore_keys.symbolize_keys
+        request_header  = body["FeCAEReq"]["FeCabReq"].underscore_keys.symbolize_keys
+        request_detail  = body["FeCAEReq"]["FeDetReq"]["FECAEDetRequest"].underscore_keys.symbolize_keys
+      rescue NoMethodError
+        if defined?(RAILS_DEFAULT_LOGGER) && logger = RAILS_DEFAULT_LOGGER
+          logger.error "[BRAVO] NoMethodError: Response #{response}"
+        else
+          puts "[BRAVO] NoMethodError: Response #{response}"
+        end
+        return false
+      end
 
       iva             = request_detail.delete(:iva)["AlicIva"].underscore_keys.symbolize_keys
 
