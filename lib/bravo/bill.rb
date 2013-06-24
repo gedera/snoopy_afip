@@ -15,7 +15,6 @@ module Bravo
         http.read_timeout = 90
         http.open_timeout = 90
         http.headers = { "Accept-Encoding" => "gzip, deflate", "Connection" => "Keep-Alive" }
-        http.instance_eval { @ssl_context = OpenSSL::SSL::SSLContext.new(:TLSv1) }
       end
       @body           = {"Auth" => Bravo.auth_hash}
       @net            = attrs[:net] || 0
