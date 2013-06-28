@@ -25,9 +25,9 @@ module Bravo
 
 #  Savon::Request.log = false unless (Bravo.verbose == "true") || (ENV["VERBOSE"] == true)
 
-  Savon.configure do |config|
-    config.log = Bravo.log?
-    config.log_level = :debug
-  end
+#  Savon.configure do |config|
+#    config.log = Bravo.log?
+#    config.log_level = :debug
+#  end
 
 end
