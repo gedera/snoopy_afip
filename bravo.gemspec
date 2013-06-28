@@ -33,6 +33,7 @@ Gem::Specification.new do |s|
       s.add_runtime_dependency(%q<nokogiri>, ["= 1.4.0"])
       s.add_runtime_dependency(%q<wasabi>, ["~> 2.2"])
       s.add_runtime_dependency(%q<akami>, ["~> 1.1"])
+      s.add_runtime_dependency(%q<nori>, ["~> 1.1"])
     else
       s.add_dependency(%q<savon>, ["~> 0.8.6"])
       s.add_dependency(%q<ruby-debug>, [">= 0"])
@@ -45,6 +46,7 @@ Gem::Specification.new do |s|
       s.add_runtime_dependency(%q<nokogiri>, ["= 1.4.0"])
       s.add_runtime_dependency(%q<wasabi>, ["~> 2.2"])
       s.add_runtime_dependency(%q<akami>, ["~> 1.1"])
+      s.add_runtime_dependency(%q<nori>, ["~> 1.1"])
     end
   else
     s.add_dependency(%q<savon>, ["~> 0.8.6"])
@@ -58,5 +60,6 @@ Gem::Specification.new do |s|
     s.add_runtime_dependency(%q<nokogiri>, ["= 1.4.0"])
     s.add_runtime_dependency(%q<wasabi>, ["~> 2.2"])
     s.add_runtime_dependency(%q<akami>, ["~> 1.1"])
+    s.add_runtime_dependency(%q<nori>, ["~> 1.1"])
   end
 end
