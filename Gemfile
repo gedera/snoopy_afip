@@ -1,5 +1,4 @@
 source "http://rubygems.org"
-gem "savon", "~> 0.9.14", :git => "https://github.com/enriserdio/savon.git"
 
 group :development do
   platforms :ruby_18 do

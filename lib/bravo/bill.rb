@@ -1,6 +1,6 @@
 module Bravo
   class Bill
-    attr_reader :client, :base_imp, :total
+    attr_reader :client, :base_imp, :total, :errors
     attr_accessor :net, :doc_num, :iva_cond, :documento, :concepto, :moneda,
                   :due_date, :aliciva_id, :fch_serv_desde, :fch_serv_hasta,
                   :body, :response
@@ -15,6 +15,7 @@ module Bravo
         http.read_timeout = 90
         http.open_timeout = 90
         http.headers = { "Accept-Encoding" => "gzip, deflate", "Connection" => "Keep-Alive" }
+        config.pretty_print_xml = true
       end
       @body           = {"Auth" => Bravo.auth_hash}
       @net            = attrs[:net] || 0
@@ -22,6 +23,7 @@ module Bravo
       self.moneda     = attrs[:moneda]    || Bravo.default_moneda
       self.iva_cond   = attrs[:iva_cond]
       self.concepto   = attrs[:concepto]  || Bravo.default_concepto
+      @errors = []
     end
 
     def cbte_type
@@ -49,14 +51,11 @@ module Bravo
 
     def authorize
       return false unless setup_bill
-      debugger
       response = client.request :fecae_solicitar do |soap|
         soap.namespaces["xmlns"] = "http://ar.gov.afip.dif.FEV1/"
         soap.body = body
       end
-
-      return false unless setup_response(response.to_hash)
-      self.authorized?
+      setup_response(response.to_hash)
     end
 
     def setup_bill
@@ -105,20 +104,20 @@ module Bravo
 
     def next_bill_number
       begin
-      debugger
         resp = client.request :fe_comp_ultimo_autorizado do
           soap.namespaces["xmlns"] = "http://ar.gov.afip.dif.FEV1/"
           soap.body = {"Auth" => Bravo.auth_hash, "PtoVta" => Bravo.sale_point, "CbteTipo" => cbte_type}
         end
-        debugger
-        resp.to_hash[:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:cbte_nro].to_i + 1
-      rescue #Curl::Err::GotNothingError, Curl::Err::TimeoutError
-        nil
+        resp_errors = resp.hash[:envelope][:body][:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:errors]
+        unless resp_errors.nil?
+          resp_errors.each_value do |value|
+            errors << "Código #{value[:code]}: #{value[:msg]}"
+          end
+        end
+      rescue Curl::Err::GotNothingError, Curl::Err::TimeoutError
+         errors << "Error de conexión con webservice de AFIP. Intente mas tarde."
       end
-    end
-
-    def authorized?
-      !response.nil? && response.header_result == "A" && response.detail_result == "A"
+        errors.empty? ? resp.to_hash[:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:cbte_nro].to_i + 1 : nil
     end
 
     private
@@ -131,8 +130,14 @@ module Bravo
 
     def setup_response(response)
       begin
+        result = response[:fecae_solicitar_response][:fecae_solicitar_result]
 
-        result          = response[:fecae_solicitar_response][:fecae_solicitar_result]
+        unless result[:fe_cab_resp][:resultado] == "A"
+          result[:fe_det_resp][:fecae_det_response][:observaciones].each_value do |obs|
+            errors << "Código #{obs[:code]}: #{obs[:msg]}"
+          end
+          return false
+        end
 
         response_header = result[:fe_cab_resp]
         response_detail = result[:fe_det_resp][:fecae_det_response]
@@ -148,7 +153,7 @@ module Bravo
         return false
       end
 
-      iva             = request_detail.delete(:iva)["AlicIva"].underscore_keys.symbolize_keys
+      iva = request_detail.delete(:iva)["AlicIva"].underscore_keys.symbolize_keys
 
       request_detail.merge!(iva)
 
