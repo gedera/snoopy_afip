@@ -75,7 +75,7 @@ module Bravo
                         "ImpTrib"     => 0.00,
                         "Iva"         => {
                           "AlicIva" => {
-                            "Id" => "5",
+                            "Id" => Bravo::ALIC_IVA[aliciva_id][0],
                             "BaseImp" => net,
                             "Importe" => iva_sum}}}}}}
 
@@ -92,7 +92,7 @@ module Bravo
         return false
       end
 
-      unless concepto == 0
+      unless concepto == "Productos"
         detail.merge!({"FchServDesde" => fch_serv_desde || today,
                       "FchServHasta"  => fch_serv_hasta || today,
                       "FchVtoPago"    => due_date       || today})
@@ -169,9 +169,6 @@ module Bravo
                        :iva_base_imp  => request_detail.delete(:base_imp),
                        :doc_num       => request_detail.delete(:doc_nro)
                        }.merge!(request_header).merge!(request_detail)
-
-      keys, values  = response_hash.to_a.transpose
-      self.response = (defined?(Struct::Response) ? Struct::Response : Struct.new("Response", *keys)).new(*values)
     end
   end
 end
