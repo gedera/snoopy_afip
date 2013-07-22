@@ -3,7 +3,7 @@ module Bravo
     attr_reader :client, :base_imp, :total, :errors
     attr_accessor :net, :doc_num, :iva_cond, :documento, :concepto, :moneda,
                   :due_date, :aliciva_id, :fch_serv_desde, :fch_serv_hasta,
-                  :body, :response
+                  :body, :response, :cbte_asoc_num, :cbte_asoc_pto_venta
 
     def initialize(attrs = {})
       Bravo::AuthData.fetch
@@ -96,6 +96,12 @@ module Bravo
         detail.merge!({"FchServDesde" => fch_serv_desde || today,
                       "FchServHasta"  => fch_serv_hasta || today,
                       "FchVtoPago"    => due_date       || today})
+      end
+
+      if self.iva_cond == :nota_credito_a or self.iva_cond == :nota_credito_b
+        detail.merge!({"CbtesAsoc" => {"CbteAsoc" => {"Nro" => cbte_asoc_num,
+                                                      "PtoVta" => cbte_asoc_pto_venta,
+                                                      "Tipo" => self.iva_cond == :nota_credito_a ? Bravo::BILL_TYPE[:responsable_inscripto] : Bravo::BILL_TYPE[:consumidor_final] }}})
       end
 
       body.merge!(fecaereq)
