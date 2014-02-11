@@ -11,6 +11,8 @@ module Bravo
     "08"=>"Nota de Credito B",
     "09"=>"Recibos B",
     "10"=>"Notas de Venta al contado B",
+    "11"=>"Factura C",
+    "13"=>"Nota de Crédito C",
     "34"=>"Cbtes. A del Anexo I, Apartado A,inc.f),R.G.Nro. 1415",
     "35"=>"Cbtes. B del Anexo I,Apartado A,inc. f),R.G. Nro. 1415",
     "39"=>"Otros comprobantes A que cumplan con R.G.Nro. 1415",
@@ -41,7 +43,8 @@ module Bravo
       :exento => "06",
       :responsable_monotributo => "06",
       :nota_credito_a => "03",
-      :nota_credito_b => "08"
+      :nota_credito_b => "08",
+      :nota_credito_c => "13"
     }
 
 end
