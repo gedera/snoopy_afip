@@ -24,6 +24,7 @@ module Bravo
       self.iva_cond   = attrs[:iva_cond]
       self.concepto   = attrs[:concepto]  || Bravo.default_concepto
       @errors = []
+      @log = Logger.new(attrs[:logger_path], shift_age = 10, shift_size = 1048576) if attrs.has_key?(:logger_path)
     end
 
     def cbte_type
@@ -58,6 +59,10 @@ module Bravo
       response = client.request :fecae_solicitar do |soap|
         soap.namespaces["xmlns"] = "http://ar.gov.afip.dif.FEV1/"
         soap.body = body
+      end
+      if @log
+        @log.info "REQUEST:>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> \n" + body.to_yaml
+        @log.info "RESPONSE:<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< \n" + response.to_yaml
       end
       setup_response(response.to_hash)
     end
