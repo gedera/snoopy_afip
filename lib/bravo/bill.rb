@@ -62,7 +62,7 @@ module Bravo
       end
       if @log
         @log.info "REQUEST:>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> \n" + body.to_yaml
-        @log.info "RESPONSE:<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< \n" + response.to_yaml
+        @log.info "RESPONSE:<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< \n" + response[:fecae_solicitar_response][:fecae_solicitar_result].to_yaml
       end
       setup_response(response.to_hash)
     end
