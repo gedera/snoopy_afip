@@ -31,7 +31,7 @@ Gem::Specification.new do |s|
       s.add_development_dependency(%q<jeweler>, ["~> 1.5.1"])
       s.add_development_dependency(%q<rcov>, [">= 0"])
       s.add_runtime_dependency(%q<nokogiri>, ["= 1.5.0"])
-      s.add_runtime_dependency(%q<wasabi>, ["~> 2.2"])
+      s.add_runtime_dependency(%q<wasabi>, ["~> 3.2.3"])
       s.add_runtime_dependency(%q<akami>, ["~> 1.1"])
       s.add_runtime_dependency(%q<nori>, ["~> 2.3.0"])
     else
@@ -44,7 +44,7 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<jeweler>, ["~> 1.5.1"])
       s.add_dependency(%q<rcov>, [">= 0"])
       s.add_runtime_dependency(%q<nokogiri>, ["= 1.5.0"])
-      s.add_runtime_dependency(%q<wasabi>, ["~> 2.2"])
+      s.add_runtime_dependency(%q<wasabi>, ["~> 3.2.3"])
       s.add_runtime_dependency(%q<akami>, ["~> 1.1"])
       s.add_runtime_dependency(%q<nori>, ["~> 2.3.0"])
     end
@@ -58,7 +58,7 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<jeweler>, ["~> 1.5.1"])
     s.add_dependency(%q<rcov>, [">= 0"])
     s.add_runtime_dependency(%q<nokogiri>, ["= 1.5.0"])
-    s.add_runtime_dependency(%q<wasabi>, ["~> 2.2"])
+    s.add_runtime_dependency(%q<wasabi>, ["~> 3.2.3"])
     s.add_runtime_dependency(%q<akami>, ["~> 1.1"])
     s.add_runtime_dependency(%q<nori>, ["~> 2.3.0"])
   end
