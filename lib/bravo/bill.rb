@@ -7,16 +7,17 @@ module Bravo
 
     def initialize(attrs = {})
       Bravo::AuthData.fetch
-      @client         = Savon::Client.new do
-        wsdl.document = Bravo.service_url
-        http.auth.ssl.cert_key_file = Bravo.pkey
-        http.auth.ssl.cert_file = Bravo.cert
-        http.auth.ssl.verify_mode = :none
-        http.read_timeout = 90
-        http.open_timeout = 90
-        http.headers = { "Accept-Encoding" => "gzip, deflate", "Connection" => "Keep-Alive" }
-        config.pretty_print_xml = true
-      end
+      @client  = Savon.client(
+        :wsdl => Bravo.service_url,
+        :ssl_cert_key_file => Bravo.pkey,
+        :ssl_cert_file => Bravo.cert,
+        :ssl_verify_mode => :none,
+        :read_timeout => 90,
+        :open_timeout => 90,
+        :headers => { "Accept-Encoding" => "gzip, deflate", "Connection" => "Keep-Alive" },
+        :pretty_print_xml => true,
+        :namespaces => {"xmlns" => "http://ar.gov.afip.dif.FEV1/"}
+      )
       @body           = {"Auth" => Bravo.auth_hash}
       @net            = attrs[:net] || 0
       self.documento  = attrs[:documento] || Bravo.default_documento
@@ -56,15 +57,13 @@ module Bravo
 
     def authorize
       return false unless setup_bill
-      response = client.request :fecae_solicitar do |soap|
-        soap.namespaces["xmlns"] = "http://ar.gov.afip.dif.FEV1/"
-        soap.body = body
-      end
+      response = client.call(:fecae_solicitar,
+                             :message => body)
       if @log
         @log.info "REQUEST:>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> \n" + body.to_yaml
-        @log.info "RESPONSE:<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< \n" + response[:fecae_solicitar_response][:fecae_solicitar_result].to_yaml
+        @log.info "RESPONSE:<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< \n" + response.body[:fecae_solicitar_response][:fecae_solicitar_result].to_yaml
       end
-      setup_response(response.to_hash)
+      setup_response(response.body)
     end
 
     def setup_bill
@@ -120,17 +119,15 @@ module Bravo
 
     def next_bill_number
       begin
-        resp = client.request :fe_comp_ultimo_autorizado do
-          soap.namespaces["xmlns"] = "http://ar.gov.afip.dif.FEV1/"
-          soap.body = {"Auth" => Bravo.auth_hash, "PtoVta" => Bravo.sale_point, "CbteTipo" => cbte_type}
-        end
+        resp = client.call(:fe_comp_ultimo_autorizado,
+                           :message => {"Auth" => Bravo.auth_hash, "PtoVta" => Bravo.sale_point, "CbteTipo" => cbte_type})
         resp_errors = resp.hash[:envelope][:body][:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:errors]
         unless resp_errors.nil?
           resp_errors.each_value do |value|
             errors << "Código #{value[:code]}: #{value[:msg]}"
           end
         end
-      rescue Curl::Err::GotNothingError, Curl::Err::TimeoutError
+      rescue #Curl::Err::GotNothingError, Curl::Err::TimeoutError
          errors << "Error de conexión con webservice de AFIP. Intente mas tarde."
       end
         errors.empty? ? resp.to_hash[:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:cbte_nro].to_i + 1 : nil
