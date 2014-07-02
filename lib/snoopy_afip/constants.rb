@@ -1,5 +1,5 @@
 # encoding: utf-8
-module Bravo
+module Snoopy
   CBTE_TIPO = {
     "01"=>"Factura A",
     "02"=>"Nota de Débito A",

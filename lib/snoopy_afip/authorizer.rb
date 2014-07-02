@@ -1,10 +1,10 @@
-module Bravo
+module Snoopy
   class Authorizer
     attr_reader :pkey, :cert
 
     def initialize
-      @pkey = Bravo.pkey
-      @cert = Bravo.cert
+      @pkey = Snoopy.pkey
+      @cert = Snoopy.cert
     end
   end
 end

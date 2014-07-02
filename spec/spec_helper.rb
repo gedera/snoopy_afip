@@ -11,13 +11,13 @@ end
 # in ./support/ and its subdirectories.
 Dir["#{File.dirname(__FILE__)}/support/**/*.rb"].each {|f| require f}
 
-Bravo.pkey = "spec/fixtures/pkey"
-Bravo.cert = "spec/fixtures/cert.crt"
-Bravo.cuit = ENV["CUIT"] || raise(Bravo::NullOrInvalidAttribute.new, "Please set CUIT env variable.")
-Bravo.sale_point = "0002"
-Bravo.auth_url = "https://wsaahomo.afip.gov.ar/ws/services/LoginCms"
-Bravo.service_url = "http://wswhomo.afip.gov.ar/wsfev1/service.asmx?WSDL"
-Bravo.default_concepto = "Productos y Servicios"
-Bravo.default_documento = "CUIT"
-Bravo.default_moneda = :peso
-Bravo.own_iva_cond = :responsable_inscripto
+Snoopy.pkey = "spec/fixtures/pkey"
+Snoopy.cert = "spec/fixtures/cert.crt"
+Snoopy.cuit = ENV["CUIT"] || raise(Snoopy::NullOrInvalidAttribute.new, "Please set CUIT env variable.")
+Snoopy.sale_point = "0002"
+Snoopy.auth_url = "https://wsaahomo.afip.gov.ar/ws/services/LoginCms"
+Snoopy.service_url = "http://wswhomo.afip.gov.ar/wsfev1/service.asmx?WSDL"
+Snoopy.default_concepto = "Productos y Servicios"
+Snoopy.default_documento = "CUIT"
+Snoopy.default_moneda = :peso
+Snoopy.own_iva_cond = :responsable_inscripto

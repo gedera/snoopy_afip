@@ -1,4 +1,4 @@
-module Bravo
+module Snoopy
   class Bill
     attr_reader :client, :base_imp, :total, :errors
     attr_accessor :net, :doc_num, :iva_cond, :documento, :concepto, :moneda,
@@ -6,11 +6,11 @@ module Bravo
                   :body, :response, :cbte_asoc_num, :cbte_asoc_pto_venta, :bill_number
 
     def initialize(attrs = {})
-      Bravo::AuthData.fetch
+      Snoopy::AuthData.fetch
       @client  = Savon.client(
-        :wsdl => Bravo.service_url,
-        :ssl_cert_key_file => Bravo.pkey,
-        :ssl_cert_file => Bravo.cert,
+        :wsdl => Snoopy.service_url,
+        :ssl_cert_key_file => Snoopy.pkey,
+        :ssl_cert_file => Snoopy.cert,
         :ssl_verify_mode => :none,
         :read_timeout => 90,
         :open_timeout => 90,
@@ -18,20 +18,20 @@ module Bravo
         :pretty_print_xml => true,
         :namespaces => {"xmlns" => "http://ar.gov.afip.dif.FEV1/"}
       )
-      @body           = {"Auth" => Bravo.auth_hash}
+      @body           = {"Auth" => Snoopy.auth_hash}
       @net            = attrs[:net] || 0
-      self.documento  = attrs[:documento] || Bravo.default_documento
-      self.moneda     = attrs[:moneda]    || Bravo.default_moneda
+      self.documento  = attrs[:documento] || Snoopy.default_documento
+      self.moneda     = attrs[:moneda]    || Snoopy.default_moneda
       self.iva_cond   = attrs[:iva_cond]
-      self.concepto   = attrs[:concepto]  || Bravo.default_concepto
+      self.concepto   = attrs[:concepto]  || Snoopy.default_concepto
       @errors = []
     end
 
     def cbte_type
-      if Bravo.own_iva_cond == :responsable_monotributo
+      if Snoopy.own_iva_cond == :responsable_monotributo
         "11"
       else
-        Bravo::BILL_TYPE[iva_cond.to_sym] ||
+        Snoopy::BILL_TYPE[iva_cond.to_sym] ||
         raise(NullOrInvalidAttribute.new, "Please choose a valid document type.")
       end
     end
@@ -40,7 +40,7 @@ module Bravo
       return 1 if moneda == :peso
       response = client.fe_param_get_cotizacion do |soap|
         soap.namespaces["xmlns"] = "http://ar.gov.afip.dif.FEV1/"
-        soap.body = body.merge!({"MonId" => Bravo::MONEDAS[moneda][:codigo]})
+        soap.body = body.merge!({"MonId" => Snoopy::MONEDAS[moneda][:codigo]})
       end
       response.to_hash[:fe_param_get_cotizacion_response][:fe_param_get_cotizacion_result][:result_get][:mon_cotiz].to_f
     end
@@ -50,7 +50,7 @@ module Bravo
     end
 
     def iva_sum
-      @iva_sum = net * Bravo::ALIC_IVA[aliciva_id][1]
+      @iva_sum = net * Snoopy::ALIC_IVA[aliciva_id][1]
       @iva_sum.round_with_precision(2)
     end
 
@@ -64,20 +64,20 @@ module Bravo
       today = Time.new.in_time_zone('Buenos Aires').strftime('%Y%m%d')
 
       fecaereq = {"FeCAEReq" => {
-                    "FeCabReq" => Bravo::Bill.header(cbte_type),
+                    "FeCabReq" => Snoopy::Bill.header(cbte_type),
                     "FeDetReq" => {
                       "FECAEDetRequest" => {
-                        "Concepto"    => Bravo::CONCEPTOS[concepto],
-                        "DocTipo"     => Bravo::DOCUMENTOS[documento],
+                        "Concepto"    => Snoopy::CONCEPTOS[concepto],
+                        "DocTipo"     => Snoopy::DOCUMENTOS[documento],
                         "CbteFch"     => today,
                         "ImpTotConc"  => 0.00,
-                        "MonId"       => Bravo::MONEDAS[moneda][:codigo],
+                        "MonId"       => Snoopy::MONEDAS[moneda][:codigo],
                         "MonCotiz"    => exchange_rate,
                         "ImpOpEx"     => 0.00,
                         "ImpTrib"     => 0.00 }}}}
-      unless Bravo.own_iva_cond == :responsable_monotributo
+      unless Snoopy.own_iva_cond == :responsable_monotributo
         fecaereq["FeCAEReq"]["FeDetReq"]["FECAEDetRequest"]["Iva"] = {"AlicIva" => {
-                                                                        "Id" => Bravo::ALIC_IVA[aliciva_id][0],
+                                                                        "Id" => Snoopy::ALIC_IVA[aliciva_id][0],
                                                                         "BaseImp" => net,
                                                                         "Importe" => iva_sum}}
       end
@@ -100,23 +100,23 @@ module Bravo
       if self.iva_cond == :nota_credito_a or self.iva_cond == :nota_credito_b
         detail.merge!({"CbtesAsoc" => {"CbteAsoc" => {"Nro" => cbte_asoc_num,
                                                       "PtoVta" => cbte_asoc_pto_venta,
-                                                      "Tipo" => self.iva_cond == :nota_credito_a ? Bravo::BILL_TYPE[:responsable_inscripto] : Bravo::BILL_TYPE[:consumidor_final] }}})
+                                                      "Tipo" => self.iva_cond == :nota_credito_a ? Snoopy::BILL_TYPE[:responsable_inscripto] : Snoopy::BILL_TYPE[:consumidor_final] }}})
       end
 
       body.merge!(fecaereq)
       true
     end
 
-    def bill_request bill_number, bill_type = cbte_type, sale_point = Bravo.sale_point
+    def bill_request bill_number, bill_type = cbte_type, sale_point = Snoopy.sale_point
       response = client.call( :fe_comp_consultar,
-                              :message => {"Auth" => Bravo.auth_hash, "FeCompConsReq" => {"CbteTipo" => bill_type, "PtoVta" => sale_point, "CbteNro" => bill_number.to_s}})
+                              :message => {"Auth" => Snoopy.auth_hash, "FeCompConsReq" => {"CbteTipo" => bill_type, "PtoVta" => sale_point, "CbteNro" => bill_number.to_s}})
       {:bill => response.to_hash[:fe_comp_consultar_response][:fe_comp_consultar_result][:result_get], :errors => response.to_hash[:fe_comp_consultar_response][:fe_comp_consultar_result][:errors]}
     end
 
     def next_bill_number
       begin
         resp = client.call(:fe_comp_ultimo_autorizado,
-                           :message => {"Auth" => Bravo.auth_hash, "PtoVta" => Bravo.sale_point, "CbteTipo" => cbte_type})
+                           :message => {"Auth" => Snoopy.auth_hash, "PtoVta" => Snoopy.sale_point, "CbteTipo" => cbte_type})
         resp_errors = resp.hash[:envelope][:body][:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:errors]
         unless resp_errors.nil?
           resp_errors.each_value do |value|
@@ -133,7 +133,7 @@ module Bravo
 
     class << self
       def header(cbte_type)#todo sacado de la factura
-        {"CantReg" => "1", "CbteTipo" => cbte_type, "PtoVta" => Bravo.sale_point}
+        {"CantReg" => "1", "CbteTipo" => cbte_type, "PtoVta" => Snoopy.sale_point}
       end
     end
 

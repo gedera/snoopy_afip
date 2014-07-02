@@ -5,7 +5,7 @@ require "savon"
 require "bravo/core_ext/float"
 require "bravo/core_ext/hash"
 require "bravo/core_ext/string"
-module Bravo
+module Snoopy
 
   class NullOrInvalidAttribute < StandardError; end
 
@@ -20,7 +20,7 @@ module Bravo
     :default_concepto, :default_moneda, :own_iva_cond, :verbose, :auth_url
 
   def auth_hash
-    {"Token" => Bravo::TOKEN, "Sign"  => Bravo::SIGN, "Cuit"  => Bravo.cuit}
+    {"Token" => Snoopy::TOKEN, "Sign"  => Snoopy::SIGN, "Cuit"  => Snoopy.cuit}
   end
 
   def bill_types
@@ -48,10 +48,10 @@ module Bravo
     ]
   end
 
-#  Savon::Request.log = false unless (Bravo.verbose == "true") || (ENV["VERBOSE"] == true)
+#  Savon::Request.log = false unless (Snoopy.verbose == "true") || (ENV["VERBOSE"] == true)
 
 #  Savon.configure do |config|
-#    config.log = Bravo.log?
+#    config.log = Snoopy.log?
 #    config.log_level = :debug
 #  end
 

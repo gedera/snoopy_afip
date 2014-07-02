@@ -2,7 +2,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
 
 describe "Bill" do
   it "should setup a header hash" do
-    @header = Bravo::Bill.header(0)
+    @header = Snoopy::Bill.header(0)
     @header.size.should == 3
     ["CantReg", "CbteTipo", "PtoVta"].each do |key|
       @header.has_key?(key).should == true
@@ -10,15 +10,15 @@ describe "Bill" do
   end
 
   describe "instance" do
-    before(:each) {@bill = Bravo::Bill.new}
+    before(:each) {@bill = Snoopy::Bill.new}
 
-    it "should initialize according to Bravo defaults" do
+    it "should initialize according to Snoopy defaults" do
       @bill.client.class.name.should == "Savon::Client"
       ["Token", "Sign", "Cuit"].each do |key|
         @bill.body["Auth"][key].should_not == nil
       end
-      @bill.documento.should == Bravo.default_documento
-      @bill.moneda.should == Bravo.default_moneda
+      @bill.documento.should == Snoopy.default_documento
+      @bill.moneda.should == Snoopy.default_moneda
     end
 
     it "should calculate it's cbte_tipo for Responsable Inscripto" do
@@ -33,7 +33,7 @@ describe "Bill" do
 
     it "raise error on nil iva cond" do
       @bill.iva_cond = 12
-      expect{@bill.cbte_type}.to raise_error(Bravo::NullOrInvalidAttribute)
+      expect{@bill.cbte_type}.to raise_error(Snoopy::NullOrInvalidAttribute)
     end
 
     it "should fetch non Peso currency's exchange rate" do
@@ -84,7 +84,7 @@ describe "Bill" do
       detail["FchVtoPago"].should   == "20111210"
     end
 
-    Bravo::BILL_TYPE[Bravo.own_iva_cond].keys.each do |target_iva_cond|
+    Snoopy::BILL_TYPE[Snoopy.own_iva_cond].keys.each do |target_iva_cond|
       it "should authorize a valid bill for #{target_iva_cond.to_s}" do
         @bill.net = 1000000
         @bill.aliciva_id = 2
