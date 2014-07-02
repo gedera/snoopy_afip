@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 
 Gem::Specification.new do |s|
-  s.name = "bravo"
+  s.name = "snoopy_afip"
   s.version = "0.4.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
@@ -10,13 +10,13 @@ Gem::Specification.new do |s|
   s.description = "Adaptador para el Web Service de Facturacion Electronica de AFIP"
   s.email = "leanucci@vurbia.com"
   s.extra_rdoc_files = ["LICENSE.txt", "README.textile"]
-  s.files = [".document", "CHANGELOG", "Gemfile", "Gemfile.lock", "LICENSE.txt", "README.textile", "Rakefile", "VERSION", "autotest/discover.rb", "bravo.gemspec", "lib/bravo.rb", "lib/bravo/auth_data.rb", "lib/bravo/authorizer.rb", "lib/bravo/bill.rb", "lib/bravo/constants.rb", "lib/bravo/core_ext/float.rb", "lib/bravo/core_ext/hash.rb", "lib/bravo/core_ext/string.rb", "lib/bravo/version.rb", "spec/bravo/auth_data_spec.rb", "spec/bravo/authorizer_spec.rb", "spec/bravo/bill_spec.rb", "spec/spec_helper.rb", "wsaa-client.sh"]
+  s.files = [".document", "CHANGELOG", "Gemfile", "Gemfile.lock", "LICENSE.txt", "README.textile", "Rakefile", "VERSION", "autotest/discover.rb", "snoopy_afip.gemspec", "lib/snoopy_afip.rb", "lib/snoopy_afip/auth_data.rb", "lib/snoopy_afip/authorizer.rb", "lib/snoopy_afip/bill.rb", "lib/snoopy_afip/constants.rb", "lib/snoopy_afip/core_ext/float.rb", "lib/snoopy_afip/core_ext/hash.rb", "lib/snoopy_afip/core_ext/string.rb", "lib/snoopy_afip/version.rb", "spec/snoopy_afip/auth_data_spec.rb", "spec/snoopy_afip/authorizer_spec.rb", "spec/snoopy_afip/bill_spec.rb", "spec/spec_helper.rb", "wsaa-client.sh"]
   s.homepage = "http://github.com/Vurbia/Bravo"
   s.licenses = ["MIT"]
   s.require_paths = ["lib"]
   s.rubygems_version = "1.8.25"
   s.summary = "Adaptador AFIP wsfe."
-  s.test_files = ["spec/bravo/auth_data_spec.rb", "spec/bravo/authorizer_spec.rb", "spec/bravo/bill_spec.rb", "spec/spec_helper.rb"]
+  s.test_files = ["spec/snoopy_afip/auth_data_spec.rb", "spec/snoopy_afip/authorizer_spec.rb", "spec/snoopy_afip/bill_spec.rb", "spec/spec_helper.rb"]
 
   if s.respond_to? :specification_version then
     s.specification_version = 3

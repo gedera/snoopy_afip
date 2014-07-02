@@ -1,5 +1,5 @@
 $:.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
-require 'bravo'
+require 'snoopy'
 require 'rspec'
 require 'ruby-debug'
 

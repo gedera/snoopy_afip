@@ -1,18 +1,18 @@
 require "bundler/setup"
-require "bravo/version"
-require "bravo/constants"
+require "snoopy_afip/version"
+require "snoopy_afip/constants"
 require "savon"
-require "bravo/core_ext/float"
-require "bravo/core_ext/hash"
-require "bravo/core_ext/string"
+require "snoopy_afip/core_ext/float"
+require "snoopy_afip/core_ext/hash"
+require "snoopy_afip/core_ext/string"
 module Snoopy
 
   class NullOrInvalidAttribute < StandardError; end
 
-  autoload :Authorizer,   "bravo/authorizer"
-  autoload :AuthData,     "bravo/auth_data"
-  autoload :Bill,         "bravo/bill"
-  autoload :Constants,    "bravo/constants"
+  autoload :Authorizer,   "snoopy_afip/authorizer"
+  autoload :AuthData,     "snoopy_afip/auth_data"
+  autoload :Bill,         "snoopy_afip/bill"
+  autoload :Constants,    "snoopy_afip/constants"
 
 
   extend self

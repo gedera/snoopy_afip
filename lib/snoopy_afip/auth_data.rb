@@ -13,7 +13,7 @@ module Snoopy
           raise "Archivo certificado no encontrado en #{Snoopy.cert}"
         end
 
-        todays_datafile = "/tmp/bravo_#{Time.new.strftime('%d_%m_%Y')}.yml"
+        todays_datafile = "/tmp/snoopy_afip_#{Time.new.strftime('%d_%m_%Y')}.yml"
         opts = "-u #{Snoopy.auth_url}"
         opts += " -k #{Snoopy.pkey}"
         opts += " -c #{Snoopy.cert}"
