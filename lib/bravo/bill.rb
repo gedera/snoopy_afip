@@ -3,7 +3,7 @@ module Bravo
     attr_reader :client, :base_imp, :total, :errors
     attr_accessor :net, :doc_num, :iva_cond, :documento, :concepto, :moneda,
                   :due_date, :aliciva_id, :fch_serv_desde, :fch_serv_hasta,
-                  :body, :response, :cbte_asoc_num, :cbte_asoc_pto_venta
+                  :body, :response, :cbte_asoc_num, :cbte_asoc_pto_venta, :bill_number
 
     def initialize(attrs = {})
       Bravo::AuthData.fetch
@@ -25,7 +25,6 @@ module Bravo
       self.iva_cond   = attrs[:iva_cond]
       self.concepto   = attrs[:concepto]  || Bravo.default_concepto
       @errors = []
-      @log = Logger.new(attrs[:logger_path], shift_age = 10, shift_size = 1048576) if attrs.has_key?(:logger_path)
     end
 
     def cbte_type
@@ -55,15 +54,10 @@ module Bravo
       @iva_sum.round_with_precision(2)
     end
 
-    def authorize
-      return false unless setup_bill
+    def cae_request
       response = client.call(:fecae_solicitar,
                              :message => body)
-      if @log
-        @log.info "REQUEST:>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> \n" + body.to_yaml
-        @log.info "RESPONSE:<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< \n" + response.body[:fecae_solicitar_response][:fecae_solicitar_result].to_yaml
-      end
-      setup_response(response.body)
+      response
     end
 
     def setup_bill
@@ -95,11 +89,7 @@ module Bravo
       detail["ImpIVA"]    = iva_sum
       detail["ImpTotal"]  = total
 
-      if bill_number = next_bill_number
-        detail["CbteDesde"] = detail["CbteHasta"] = bill_number
-      else
-        return false
-      end
+      detail["CbteDesde"] = detail["CbteHasta"] = bill_number
 
       unless concepto == "Productos"
         detail.merge!({"FchServDesde" => fch_serv_desde || today,
@@ -117,6 +107,12 @@ module Bravo
       true
     end
 
+    def bill_request bill_number, bill_type = cbte_type, sale_point = Bravo.sale_point
+      response = client.call( :fe_comp_consultar,
+                              :message => {"Auth" => Bravo.auth_hash, "FeCompConsReq" => {"CbteTipo" => bill_type, "PtoVta" => sale_point, "CbteNro" => bill_number.to_s}})
+      {:bill => response.to_hash[:fe_comp_consultar_response][:fe_comp_consultar_result][:result_get], :errors => response.to_hash[:fe_comp_consultar_response][:fe_comp_consultar_result][:errors]}
+    end
+
     def next_bill_number
       begin
         resp = client.call(:fe_comp_ultimo_autorizado,
@@ -130,10 +126,10 @@ module Bravo
       rescue #Curl::Err::GotNothingError, Curl::Err::TimeoutError
          errors << "Error de conexión con webservice de AFIP. Intente mas tarde."
       end
-        errors.empty? ? resp.to_hash[:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:cbte_nro].to_i + 1 : nil
+      result = {:errors => errors}
+      result[:bill_number] = errors.empty? ? resp.to_hash[:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:cbte_nro].to_i + 1 : -1
+      result
     end
-
-    private
 
     class << self
       def header(cbte_type)#todo sacado de la factura
@@ -141,54 +137,37 @@ module Bravo
       end
     end
 
-    def setup_response(response)
-      begin
-        result = response[:fecae_solicitar_response][:fecae_solicitar_result]
+    def parse_response(response)
+      result = {:errors => [], :observations => []}
 
-        unless result[:fe_cab_resp][:resultado] == "A"
-          result[:fe_det_resp][:fecae_det_response][:observaciones].each_value do |obs|
-            errors << "Código #{obs[:code]}: #{obs[:msg]}"
+      result[:fecae_response] = response[:fecae_solicitar_response][:fecae_solicitar_result][:fe_det_resp][:fecae_det_response] rescue {}
+
+      if result[:fecae_response].has_key? :observaciones
+        begin
+          result[:fecae_response][:observaciones].each_value do |obs|
+            result[:observations] << "Código #{obs[:code]}: #{obs[:msg]}"
           end
-          return false
+        rescue
+          result[:observations] << "Ocurrió un error al parsear las observaciones de AFIP"
         end
-
-        response_header = result[:fe_cab_resp]
-        response_detail = result[:fe_det_resp][:fecae_det_response]
-
-        request_header  = body["FeCAEReq"]["FeCabReq"].underscore_keys.symbolize_keys
-        request_detail  = body["FeCAEReq"]["FeDetReq"]["FECAEDetRequest"].underscore_keys.symbolize_keys
-      rescue NoMethodError
-        if defined?(RAILS_DEFAULT_LOGGER) && logger = RAILS_DEFAULT_LOGGER
-          logger.error "[BRAVO] NoMethodError: Response #{response}"
-        else
-          puts "[BRAVO] NoMethodError: Response #{response}"
-        end
-        return false
       end
 
-      response_hash = {}
-      unless Bravo.own_iva_cond == :responsable_monotributo
-        iva = request_detail.delete(:iva)["AlicIva"].underscore_keys.symbolize_keys
-        request_detail.merge!(iva)
-        response_hash.merge!({
-          :iva_id        => request_detail.delete(:id),
-          :iva_importe   => request_detail.delete(:importe),
-          :iva_base_imp  => request_detail.delete(:base_imp),
-        })
+      fecae_result = response[:fecae_solicitar_response][:fecae_solicitar_result] rescue {}
+
+      if fecae_result.has_key? :errors
+        begin
+          fecae_result[:errors].each_value do |error|
+            result[:errors] << "Código #{error[:code]}: #{error[:msg]}"
+          end
+        rescue
+          result[:errors] << "Ocurrió un error al parsear los errores de AFIP"
+        end
       end
 
-      response_hash.merge!({ :header_result => response_header.delete(:resultado),
-                             :authorized_on => response_header.delete(:fch_proceso),
-                             :detail_result => response_detail.delete(:resultado),
-                             :cae_due_date  => response_detail.delete(:cae_fch_vto),
-                             :cae           => response_detail.delete(:cae),
-                             :moneda        => request_detail.delete(:mon_id),
-                             :cotizacion    => request_detail.delete(:mon_cotiz),
-                             :doc_num       => request_detail.delete(:doc_nro)
-                            }).merge!(request_header).merge!(request_detail)
+      fe_cab_resp = response[:fecae_solicitar_response][:fecae_solicitar_result][:fe_cab_resp] rescue {}
+      result[:fecae_response].merge!(fe_cab_resp)
 
-      keys, values  = response_hash.to_a.transpose
-      self.response = (defined?(Struct::Response) ? Struct::Response : Struct.new("Response", *keys)).new(*values)
+      result
     end
   end
 end
