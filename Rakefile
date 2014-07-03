@@ -17,8 +17,8 @@ Jeweler::Tasks.new do |gem|
   gem.license = "MIT"
   gem.summary = "Adaptador AFIP wsfe."
   gem.description = "Adaptador para el Web Service de Facturacion Electronica de AFIP"
-  gem.email = "leanucci@vurbia.com"
-  gem.authors = ["Leandro Marcucci"]
+  gem.email = "eserdio@sequre.com.ar"
+  gem.authors = ["Enrique Serdio"]
   # Include your dependencies below. Runtime dependencies are required when using your gem,
   # and development dependencies are only needed for development (ie running rake tasks, tests, etc)
   #  gem.add_runtime_dependency 'jabber4r', '> 0.1'
