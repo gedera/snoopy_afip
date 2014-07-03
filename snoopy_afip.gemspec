@@ -10,7 +10,7 @@ Gem::Specification.new do |s|
   s.description = "Adaptador para el Web Service de Facturacion Electronica de AFIP"
   s.email = "leanucci@vurbia.com"
   s.extra_rdoc_files = ["LICENSE.txt", "README.textile"]
-  s.files = [".document", "CHANGELOG", "Gemfile", "Gemfile.lock", "LICENSE.txt", "README.textile", "Rakefile", "VERSION", "autotest/discover.rb", "snoopy_afip.gemspec", "lib/snoopy_afip.rb", "lib/snoopy_afip/auth_data.rb", "lib/snoopy_afip/authorizer.rb", "lib/snoopy_afip/bill.rb", "lib/snoopy_afip/constants.rb", "lib/snoopy_afip/core_ext/float.rb", "lib/snoopy_afip/core_ext/hash.rb", "lib/snoopy_afip/core_ext/string.rb", "lib/snoopy_afip/version.rb", "spec/snoopy_afip/auth_data_spec.rb", "spec/snoopy_afip/authorizer_spec.rb", "spec/snoopy_afip/bill_spec.rb", "spec/spec_helper.rb", "wsaa-client.sh"]
+  s.files = [".document", "CHANGELOG", "Gemfile", "Gemfile.lock", "LICENSE.txt", "README.textile", "Rakefile", "VERSION", "autotest/discover.rb", "snoopy_afip.gemspec", "lib/snoopy.rb", "lib/snoopy_afip/auth_data.rb", "lib/snoopy_afip/authorizer.rb", "lib/snoopy_afip/bill.rb", "lib/snoopy_afip/constants.rb", "lib/snoopy_afip/core_ext/float.rb", "lib/snoopy_afip/core_ext/hash.rb", "lib/snoopy_afip/core_ext/string.rb", "lib/snoopy_afip/version.rb", "spec/snoopy_afip/auth_data_spec.rb", "spec/snoopy_afip/authorizer_spec.rb", "spec/snoopy_afip/bill_spec.rb", "spec/spec_helper.rb", "wsaa-client.sh"]
   s.homepage = "http://github.com/Vurbia/Bravo"
   s.licenses = ["MIT"]
   s.require_paths = ["lib"]
