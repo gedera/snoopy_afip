@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.email = "leanucci@vurbia.com"
   s.extra_rdoc_files = ["LICENSE.txt", "README.textile"]
   s.files = [".document", "CHANGELOG", "Gemfile", "Gemfile.lock", "LICENSE.txt", "README.textile", "Rakefile", "VERSION", "autotest/discover.rb", "snoopy_afip.gemspec", "lib/snoopy.rb", "lib/snoopy_afip/auth_data.rb", "lib/snoopy_afip/authorizer.rb", "lib/snoopy_afip/bill.rb", "lib/snoopy_afip/constants.rb", "lib/snoopy_afip/core_ext/float.rb", "lib/snoopy_afip/core_ext/hash.rb", "lib/snoopy_afip/core_ext/string.rb", "lib/snoopy_afip/version.rb", "spec/snoopy_afip/auth_data_spec.rb", "spec/snoopy_afip/authorizer_spec.rb", "spec/snoopy_afip/bill_spec.rb", "spec/spec_helper.rb", "wsaa-client.sh"]
-  s.homepage = "http://github.com/Vurbia/Bravo"
+  s.homepage = "https://github.com/enriserdio/snoopy_afip"
   s.licenses = ["MIT"]
   s.require_paths = ["lib"]
   s.rubygems_version = "1.8.25"
@@ -43,10 +43,10 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<bundler>, ["~> 1.0.0"])
       s.add_dependency(%q<jeweler>, ["~> 1.5.1"])
       s.add_dependency(%q<rcov>, [">= 0"])
-      s.add_dependency(%q<nokogiri>, ["= 1.5.0"])
-      s.add_dependency(%q<wasabi>, ["~> 3.2.3"])
-      s.add_dependency(%q<akami>, ["~> 1.1"])
-      s.add_dependency(%q<nori>, ["~> 2.3.0"])
+      s.add_runtime_dependency(%q<nokogiri>, ["= 1.5.0"])
+      s.add_runtime_dependency(%q<wasabi>, ["~> 3.2.3"])
+      s.add_runtime_dependency(%q<akami>, ["~> 1.1"])
+      s.add_runtime_dependency(%q<nori>, ["~> 2.3.0"])
     end
   else
     s.add_dependency(%q<savon>, ["= 2.4.0"])
@@ -57,9 +57,9 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<bundler>, ["~> 1.0.0"])
     s.add_dependency(%q<jeweler>, ["~> 1.5.1"])
     s.add_dependency(%q<rcov>, [">= 0"])
-    s.add_dependency(%q<nokogiri>, ["= 1.5.0"])
-    s.add_dependency(%q<wasabi>, ["~> 3.2.3"])
-    s.add_dependency(%q<akami>, ["~> 1.1"])
-    s.add_dependency(%q<nori>, ["~> 2.3.0"])
+    s.add_runtime_dependency(%q<nokogiri>, ["= 1.5.0"])
+    s.add_runtime_dependency(%q<wasabi>, ["~> 3.2.3"])
+    s.add_runtime_dependency(%q<akami>, ["~> 1.1"])
+    s.add_runtime_dependency(%q<nori>, ["~> 2.3.0"])
   end
 end
