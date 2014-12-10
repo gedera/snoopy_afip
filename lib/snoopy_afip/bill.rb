@@ -38,6 +38,17 @@ module Snoopy
       end
     end
 
+    def cbte_type_from_credit_note
+      case self.iva_cond
+      when :nota_credito_a
+        Snoopy::BILL_TYPE[:responsable_inscripto]
+      when :nota_credito_b
+        Snoopy::BILL_TYPE[:consumidor_final]
+      when :nota_credito_c
+        "11"
+      end
+    end
+
     def exchange_rate
       return 1 if moneda == :peso
       response = client.fe_param_get_cotizacion do |soap|
@@ -99,10 +110,10 @@ module Snoopy
                       "FchVtoPago"    => due_date       || today})
       end
 
-      if self.iva_cond == :nota_credito_a or self.iva_cond == :nota_credito_b
+      if self.iva_cond.to_s.include?("nota_credito")
         detail.merge!({"CbtesAsoc" => {"CbteAsoc" => {"Nro" => cbte_asoc_num,
                                                       "PtoVta" => cbte_asoc_pto_venta,
-                                                      "Tipo" => self.iva_cond == :nota_credito_a ? Snoopy::BILL_TYPE[:responsable_inscripto] : Snoopy::BILL_TYPE[:consumidor_final] }}})
+                                                      "Tipo" => cbte_type_from_credit_note }}})
       end
 
       body.merge!(fecaereq)
