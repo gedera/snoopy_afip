@@ -28,7 +28,9 @@ module Snoopy
     end
 
     def cbte_type
-      if Snoopy.own_iva_cond == :responsable_monotributo
+      if iva_cond.to_sym == :nota_credito_c
+        "13"
+      elsif Snoopy.own_iva_cond == :responsable_monotributo
         "11"
       else
         Snoopy::BILL_TYPE[iva_cond.to_sym] ||
