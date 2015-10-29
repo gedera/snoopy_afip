@@ -2,8 +2,8 @@ module Snoopy
   class Bill
     attr_reader :client, :base_imp, :total, :errors
     attr_accessor :net, :doc_num, :iva_cond, :documento, :concepto, :moneda,
-                  :due_date, :aliciva_id, :fch_serv_desde, :fch_serv_hasta,
-                  :body, :response, :cbte_asoc_num, :cbte_asoc_pto_venta, :bill_number
+                  :due_date, :aliciva_id, :fch_serv_desde, :fch_serv_hasta, :body,
+                  :response, :cbte_asoc_num, :cbte_asoc_pto_venta, :bill_number, :alicivas
 
     def initialize(attrs = {})
       Snoopy::AuthData.fetch
@@ -63,7 +63,11 @@ module Snoopy
     end
 
     def iva_sum
-      @iva_sum = net * Snoopy::ALIC_IVA[aliciva_id][1]
+      if alicivas.present?
+        @iva_sum = alicivas.collect{|aliciva| aliciva[:importe] }.sum
+      else
+        @iva_sum = net * Snoopy::ALIC_IVA[aliciva_id][1]
+      end
       @iva_sum.round_with_precision(2)
     end
 
@@ -88,11 +92,21 @@ module Snoopy
                         "MonCotiz"    => exchange_rate,
                         "ImpOpEx"     => 0.00,
                         "ImpTrib"     => 0.00 }}}}
+
       unless Snoopy.own_iva_cond == :responsable_monotributo
-        fecaereq["FeCAEReq"]["FeDetReq"]["FECAEDetRequest"]["Iva"] = {"AlicIva" => {
-                                                                        "Id" => Snoopy::ALIC_IVA[aliciva_id][0],
-                                                                        "BaseImp" => net,
-                                                                        "Importe" => iva_sum}}
+        if alicivas.present?
+          _alicivas = alicivas.collect do |aliciva|
+            { "Id" => aliciva[:id],
+              "BaseImp" => aliciva[:base_imp],
+              "Importe" => aliciva[:importe] }
+          end
+          fecaereq["FeCAEReq"]["FeDetReq"]["FECAEDetRequest"]["Iva"] = { "AlicIva" => _alicivas }
+        else
+          fecaereq["FeCAEReq"]["FeDetReq"]["FECAEDetRequest"]["Iva"] = {"AlicIva" => {
+                                                                          "Id" => Snoopy::ALIC_IVA[aliciva_id.to_i][0],
+                                                                          "BaseImp" => net,
+                                                                          "Importe" => iva_sum}}
+        end
       end
 
       detail = fecaereq["FeCAEReq"]["FeDetReq"]["FECAEDetRequest"]
