@@ -11,7 +11,7 @@ module Snoopy
         :wsdl => Snoopy.service_url,
         :ssl_cert_key_file => Snoopy.pkey,
         :ssl_cert_file => Snoopy.cert,
-        :ssl_verify_mode => :none,
+        :ssl_version => :TLSv1,
         :read_timeout => 90,
         :open_timeout => 90,
         :headers => { "Accept-Encoding" => "gzip, deflate", "Connection" => "Keep-Alive" },
