@@ -63,8 +63,8 @@ module Snoopy
     end
 
     def iva_sum
-      if alicivas.present?
-        @iva_sum = alicivas.collect{|aliciva| aliciva[:importe] }.sum
+      if !alicivas.nil?
+        @iva_sum = alicivas.collect{|aliciva| aliciva[:importe] }.sum.to_f
       else
         @iva_sum = net * Snoopy::ALIC_IVA[aliciva_id][1]
       end
