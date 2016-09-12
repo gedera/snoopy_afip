@@ -23,13 +23,13 @@ module Snoopy
       @documento           = attrs[:documento] || Snoopy.default_documento
       @moneda              = attrs[:moneda]    || Snoopy.default_moneda
       @concepto            = attrs[:concepto]  || Snoopy.default_concepto
-      @doc_num             = attr[:doc_num]
-      @fch_serv_desde      = attr[:fch_serv_desde]
-      @fch_serv_hasta      = attr[:fch_serv_hasta]
-      @cbte_asoc_pto_venta = attr[:cbte_asoc_pto_venta]
-      @cbte_asoc_num       = attr[:cbte_asoc_num]
+      @doc_num             = attrs[:doc_num]
+      @fch_serv_desde      = attrs[:fch_serv_desde]
+      @fch_serv_hasta      = attrs[:fch_serv_hasta]
+      @cbte_asoc_pto_venta = attrs[:cbte_asoc_pto_venta]
+      @cbte_asoc_num       = attrs[:cbte_asoc_num]
       @iva_cond            = attrs[:iva_cond]
-      @alicivas            = attr[:alicivas]
+      @alicivas            = attrs[:alicivas]
       @errors = []
     end
 
