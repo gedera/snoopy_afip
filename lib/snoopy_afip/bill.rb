@@ -5,25 +5,31 @@ module Snoopy
                   :due_date, :aliciva_id, :fch_serv_desde, :fch_serv_hasta, :body,
                   :response, :cbte_asoc_num, :cbte_asoc_pto_venta, :bill_number, :alicivas
 
-    def initialize(attrs = {})
+    def initialize(attrs={})
       Snoopy::AuthData.fetch
-      @client  = Savon.client(
-        :wsdl => Snoopy.service_url,
-        :ssl_cert_key_file => Snoopy.pkey,
-        :ssl_cert_file => Snoopy.cert,
-        :ssl_version => :TLSv1,
-        :read_timeout => 90,
-        :open_timeout => 90,
-        :headers => { "Accept-Encoding" => "gzip, deflate", "Connection" => "Keep-Alive" },
-        :pretty_print_xml => true,
-        :namespaces => {"xmlns" => "http://ar.gov.afip.dif.FEV1/"}
-      )
-      @body           = {"Auth" => Snoopy.auth_hash}
-      @net            = attrs[:net] || 0
-      self.documento  = attrs[:documento] || Snoopy.default_documento
-      self.moneda     = attrs[:moneda]    || Snoopy.default_moneda
-      self.iva_cond   = attrs[:iva_cond]
-      self.concepto   = attrs[:concepto]  || Snoopy.default_concepto
+
+      @client = Savon.client( :wsdl => Snoopy.service_url,
+                              :ssl_cert_key_file => Snoopy.pkey,
+                              :ssl_cert_file => Snoopy.cert,
+                              :ssl_version => :TLSv1,
+                              :read_timeout => 90,
+                              :open_timeout => 90,
+                              :headers => { "Accept-Encoding" => "gzip, deflate", "Connection" => "Keep-Alive" },
+                              :pretty_print_xml => true,
+                              :namespaces => {"xmlns" => "http://ar.gov.afip.dif.FEV1/"} )
+
+      @body                = {"Auth" => Snoopy.auth_hash}
+      @net                 = attrs[:net]       || 0
+      @documento           = attrs[:documento] || Snoopy.default_documento
+      @moneda              = attrs[:moneda]    || Snoopy.default_moneda
+      @concepto            = attrs[:concepto]  || Snoopy.default_concepto
+      @doc_num             = attr[:doc_num]
+      @fch_serv_desde      = attr[:fch_serv_desde]
+      @fch_serv_hasta      = attr[:fch_serv_hasta]
+      @cbte_asoc_pto_venta = attr[:cbte_asoc_pto_venta]
+      @cbte_asoc_num       = attr[:cbte_asoc_num]
+      @iva_cond            = attrs[:iva_cond]
+      @alicivas            = attr[:alicivas]
       @errors = []
     end
 
@@ -71,10 +77,33 @@ module Snoopy
       @iva_sum.round_with_precision(2)
     end
 
+    def set_bill_number
+      begin
+        resp = client.call( :fe_comp_ultimo_autorizado,
+                            :message => {"Auth" => Snoopy.auth_hash, "PtoVta" => Snoopy.sale_point, "CbteTipo" => cbte_type})
+        resp_errors = resp.hash[:envelope][:body][:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:errors]
+        unless resp_errors.nil?
+          resp_errors.each_value do |value|
+            errors << "Código #{value[:code]}: #{value[:msg]}"
+          end
+        end
+      rescue #Curl::Err::GotNothingError, Curl::Err::TimeoutError
+         errors << "Error de conexión con webservice de AFIP. Intente mas tarde."
+      end
+      @bill_number = resp.to_hash[:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:cbte_nro].to_i + 1 if errors.empty?
+      errors
+    end
+
     def cae_request
-      response = client.call(:fecae_solicitar,
-                             :message => body)
-      response
+      errors = set_bill_number
+      if errors.empty?
+        response = client.call( :fecae_solicitar,
+                                :message => body )
+
+        parse_response(response[:xml].to_hash).merge(:response => response)
+      else
+        { :errors => errors }
+      end
     end
 
     def setup_bill
@@ -138,24 +167,6 @@ module Snoopy
       response = client.call( :fe_comp_consultar,
                               :message => {"Auth" => Snoopy.auth_hash, "FeCompConsReq" => {"CbteTipo" => bill_type, "PtoVta" => sale_point, "CbteNro" => bill_number.to_s}})
       {:bill => response.to_hash[:fe_comp_consultar_response][:fe_comp_consultar_result][:result_get], :errors => response.to_hash[:fe_comp_consultar_response][:fe_comp_consultar_result][:errors]}
-    end
-
-    def next_bill_number
-      begin
-        resp = client.call(:fe_comp_ultimo_autorizado,
-                           :message => {"Auth" => Snoopy.auth_hash, "PtoVta" => Snoopy.sale_point, "CbteTipo" => cbte_type})
-        resp_errors = resp.hash[:envelope][:body][:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:errors]
-        unless resp_errors.nil?
-          resp_errors.each_value do |value|
-            errors << "Código #{value[:code]}: #{value[:msg]}"
-          end
-        end
-      rescue #Curl::Err::GotNothingError, Curl::Err::TimeoutError
-         errors << "Error de conexión con webservice de AFIP. Intente mas tarde."
-      end
-      result = {:errors => errors}
-      result[:bill_number] = errors.empty? ? resp.to_hash[:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:cbte_nro].to_i + 1 : -1
-      result
     end
 
     class << self
