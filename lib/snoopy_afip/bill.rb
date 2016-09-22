@@ -9,7 +9,7 @@ module Snoopy
                   :response, :cbte_asoc_num, :cbte_asoc_pto_venta, :numero, :alicivas,
                   :pkey, :cert, :cuit, :punto_venta, :condicion_iva_emisor, :auth, :errors,
                   :cae, :resultado, :fecha_proceso, :vencimiento_cae, :fecha_comprobante,
-                  :observaciones, :events
+                  :observaciones, :events, :imp_iva
 
     def initialize(attrs={})
       @pkey                   = attrs[:pkey]
@@ -28,6 +28,7 @@ module Snoopy
       @cbte_asoc_num          = attrs[:cbte_asoc_num]       # Esto es el numero de factura para la nota de credito
       @condicion_iva_receptor = attrs[:iva_cond]
       @alicivas               = attrs[:alicivas]
+      @imp_iva                = attrs[:imp_iva]             # Monto total de impuestos
       @response               = nil
       @errors                 = []
       @observaciones          = []
@@ -74,6 +75,10 @@ module Snoopy
       resp_errors = resp.hash[:envelope][:body][:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:errors]
       resp_errors.each_value { |value| @errors << "Código #{value[:code]}: #{value[:msg]}" } unless resp_errors.nil?
       @numero = resp.to_hash[:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:cbte_nro].to_i + 1 if @errors.empty?
+    end
+
+    def build_header
+      { "CantReg" => "1", "CbteTipo" => cbte_type, "PtoVta" => punto_venta }
     end
 
     def build_body_request
@@ -131,7 +136,7 @@ module Snoopy
         if @errors.empty?
           build_body_request
           @response = client.call( :fecae_solicitar, :message => body ).body
-          parse_response
+          parse_fecae_solicitar_response
         end
       rescue => e #Curl::Err::GotNothingError, Curl::Err::TimeoutError
         @errors = e.message
@@ -143,65 +148,87 @@ module Snoopy
     def parcial?; @resultado == "P"; end
     def rechazada?; @resultado == "R"; end
 
-    def parse_response
-      result = { :errors => [], :observations => [], :events => [] }
+    def parse_observations(fecae_observations)
+      begin
+        fecae_observations.each_value do |obs|
+          [obs].flatten.each { |ob| @observaciones << "Código #{ob[:code]}: #{ob[:msg]}" }
+        end
+      rescue
+        @observaciones << "Ocurrió un error al parsear las observaciones de AFIP"
+      end
+    end
 
+    def parse_errors(fecae_errors)
+      begin
+        fecae_errors.each_value do |errores|
+          [errores].flatten.each { |error| @errors << "Código #{error[:code]}: #{error[:msg]}" }
+        end
+      rescue
+        @errors << "Ocurrió un error al parsear los errores de AFIP"
+      end
+    end
+
+    def parse_events(fecae_events)
+      begin
+        fecae_events.each_value do |events|
+          [events].flatten.each { |event| @events << "Código #{event[:code]}: #{event[:msg]}" }
+        end
+      rescue
+        @events << "Ocurrió un error al parsear los eventos de AFIP"
+      end
+    end
+
+    def parse_fecae_solicitar_response
       fecae_response = @response[:fecae_solicitar_response][:fecae_solicitar_result][:fe_det_resp][:fecae_det_response] rescue {}
       fe_cab_resp    = @response[:fecae_solicitar_response][:fecae_solicitar_result][:fe_cab_resp] rescue {}
       fecae_result   = @response[:fecae_solicitar_response][:fecae_solicitar_result] rescue {}
 
       @cae               = fecae_response[:cae]
-      @resultado         = fecae_response[:resultado]
       @numero            = fecae_response[:cbte_desde]
-      @fecha_proceso     = fe_cab_resp[:fch_proceso]
+      @resultado         = fecae_response[:resultado]
       @vencimiento_cae   = fecae_response[:cae_fch_vto]
       @fecha_comprobante = fecae_response[:cbte_fch]
 
-      if fecae_response.has_key? :observaciones
-        begin
-          fecae_response.delete(:observaciones).each_value do |obs|
-            [obs].flatten.each { |ob| @observaciones << "Código #{ob[:code]}: #{ob[:msg]}" }
-          end
-        rescue
-          @observaciones << "Ocurrió un error al parsear las observaciones de AFIP"
-        end
-      end
+      @fecha_proceso     = fe_cab_resp[:fch_proceso]
 
-      if fecae_result.has_key? :errors
-        begin
-          fecae_result[:errors].each_value do |errores|
-            [errores].flatten.each { |error| @errors << "Código #{error[:code]}: #{error[:msg]}" }
-          end
-        rescue
-          @errors << "Ocurrió un error al parsear los errores de AFIP"
-        end
-      end
-
-      if fecae_result.has_key? :events
-        begin
-          fecae_result[:events].each_value do |events|
-            [events].flatten.each { |event| @events << "Código #{event[:code]}: #{event[:msg]}" }
-          end
-        rescue
-          @events << "Ocurrió un error al parsear los eventos de AFIP"
-        end
-      end
+      parse_observations(fecae_response.delete(:observaciones)) if fecae_response.has_key? :observaciones
+      parse_errors(fecae_result[:errors])                       if fecae_result.has_key? :errors
+      parse_events(fecae_result[:events])                       if fecae_result.has_key? :events
     end
 
-    def build_header
-      { "CantReg" => "1", "CbteTipo" => cbte_type, "PtoVta" => punto_venta }
+    def parse_fe_comp_consultar_response
+      result_get               = @response.to_hash[:fe_comp_consultar_response][:fe_comp_consultar_result][:result_get]
+      fe_comp_consultar_result = @response.to_hash[:fe_comp_consultar_response][:fe_comp_consultar_result]
+
+      unless result_get.nil?
+        @cae                  = result_get[:cod_autorizacion]
+        @imp_iva              = result_get[:imp_iva]
+        @numero               = result_get[:cbte_desde]
+        @resultado            = result_get[:resultado]
+        @fecha_proceso        = result_get[:fch_proceso]
+        @vencimiento_cae      = result_get[:fch_vto]
+        @numero_documento     = result_get[:doc_numero]
+        @fecha_comprobante    = result_get[:cbte_fch]
+        @fecha_servicio_desde = result_get[:fch_serv_desde]
+        @fecha_servicio_hasta = result_get[:fch_serv_hasta]
+        parse_events(result_get[:observaciones]) if result_get.has_key? :observaciones
+      end
+
+      self.parse_events(fe_comp_consultar_result[:errors]) if fe_comp_consultar_result and fe_comp_consultar_result.has_key? :errors
+      self.parse_events(fe_comp_consultar_result[:events]) if fe_comp_consultar_result and fe_comp_consultar_result.has_key? :events
     end
 
     def self.bill_request(numero, attrs={})
       bill = new(attrs)
       begin
-        response = bill.client.call( :fe_comp_consultar,
-                                     :message => {"Auth" => bill.generate_auth_file,
-                                                  "FeCompConsReq" => {"CbteTipo" => bill.cbte_type, "PtoVta" => bill.punto_venta, "CbteNro" => numero.to_s}})
-        {:bill => response.to_hash[:fe_comp_consultar_response][:fe_comp_consultar_result][:result_get], :errors => response.to_hash[:fe_comp_consultar_response][:fe_comp_consultar_result][:errors]}
+        bill.response = bill.client.call( :fe_comp_consultar,
+                                          :message => {"Auth" => bill.generate_auth_file,
+                                                       "FeCompConsReq" => {"CbteTipo" => bill.cbte_type, "PtoVta" => bill.punto_venta, "CbteNro" => numero.to_s}})
+        bill.parse_fe_comp_consultar_response
       rescue => e
-        response = { :errors => e.message }
+        bill.errors << e.message
       end
+      bill
     end
 
   end
