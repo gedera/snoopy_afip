@@ -133,7 +133,7 @@ EOF
 
 function WriteYAML()
 {
-	cat <<EOF > /tmp/snoopy_afip_$(date +"%d_%m_%Y").yml
+	cat <<EOF > /tmp/snoopy_afip_"$CUIT"_$(date +"%d_%m_%Y").yml
 token: '$TOKEN'
 sign: '$SIGN'
 EOF
