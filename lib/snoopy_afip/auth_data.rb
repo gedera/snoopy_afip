@@ -1,3 +1,4 @@
+# coding: utf-8
 module Snoopy
   module AuthData
     def generate_auth_file
@@ -22,10 +23,23 @@ module Snoopy
 
     def self.generate_pkey file
       begin
-        %x(openssl genrsa -out #{file} 2048)
+        %x(openssl genrsa -out #{file} 8192)
       rescue => e
-        raise "command 'openssl genrsa -out #{file} 1024' error al generar pkey: #{e.message}"
+        raise "command fail: 'openssl genrsa -out #{file} 8192' error al generar pkey: #{e.message}, error: #{e.message}"
       end
+    end
+
+    # pkey: clave privada generada por el metodo generate_pkey.
+    # subj_o: Nombre de la empresa, registrado en AFIP.
+    # subj_cn: hostname del servidor que realizara la comunicación con AFIP.
+    # subj_cuit: Cuit registado en AFIP.
+    # out_path: donde se almacenara el certificado generado.
+    # Snoopy::AuthData.generate_certificate_request(generate_pkey, subj_o, subj_cn, subj_cuit, tmp_cert_req_path)
+    def generate_certificate_request(pkey, subj_o, subj_cn, subj_cuit, out_path)
+      begin
+        %x(openssl req -new -key #{pkey} -subj "/C=AR/O=#{subj_o}/CN=#{subj_cn}/serialNumber=CUIT #{subj_cuit}" -out #{out_path})
+      rescue => e
+        raise "command fail: openssl req -new -key #{pkey} -subj /C=AR/O=#{subj_o}/CN=#{subj_cn}/serialNumber=CUIT #{subj_cuit} -out #{out_path}, error: #{e.message}"
     end
   end
 end
