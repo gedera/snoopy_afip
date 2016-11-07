@@ -1,3 +1,4 @@
+# coding: utf-8
 module Snoopy
   class Bill
     include AuthData
@@ -147,6 +148,18 @@ module Snoopy
     def aprobada?; @resultado == "A"; end
     def parcial?; @resultado == "P"; end
     def rechazada?; @resultado == "R"; end
+
+    # Para probar que la conexion con afip es correcta, si este metodo devuelve true, es posible realizar cualquier consulta al ws de la AFIP.
+    def connection_valid?
+      begin
+        result = client.call(:fe_dummy).body[:fe_dummy_response][:fe_dummy_result]
+        @observaciones << "app_server: #{result[:app_server]}, db_server: #{result[:db_server]}, auth_server: #{result[:auth_server]}"
+        result[:app_server] == "OK" and result[:db_server] == "OK" and result[:auth_server] == "OK"
+      rescue => e
+        @errors << e.message
+        false
+      end
+    end
 
     def parse_observations(fecae_observations)
       begin
