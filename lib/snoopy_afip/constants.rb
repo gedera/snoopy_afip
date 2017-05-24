@@ -69,6 +69,7 @@ module Snoopy
               :oro   => { :codigo => '049', :nombre => 'Gramos de Oro Fino' } }
 
   ALIC_IVA = { 0     => '3',
+               0.0   => '3',
                0.025 => '9',
                0.05  => '8',
                0.105 => '4',

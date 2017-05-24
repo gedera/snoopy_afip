@@ -8,9 +8,9 @@ Gem::Specification.new do |s|
   s.version = Snoopy::VERSION
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
-  s.authors = ["g.edera, eserdio"]
+  s.authors = ["g.edera"]
   s.date = "2016-09-12"
-  s.description = "Adaptador para el Web Service de Facturacion Electronica de AFIP"
+  s.description = "Adaptador para Web Service de Facturación Electrónica Argentina (AFIP)"
   s.email = ["gab.edera@gmail.com"]
   s.extra_rdoc_files = ["LICENSE.txt", "README.textile"]
   s.files = [".document", "CHANGELOG", "Gemfile", "Gemfile.lock", "LICENSE.txt", "README.textile", "Rakefile", "VERSION", "autotest/discover.rb", "snoopy_afip.gemspec", "lib/snoopy_afip.rb", "lib/snoopy_afip/auth_data.rb", "lib/snoopy_afip/authorizer.rb", "lib/snoopy_afip/bill.rb", "lib/snoopy_afip/constants.rb", "lib/snoopy_afip/core_ext/float.rb", "lib/snoopy_afip/core_ext/hash.rb", "lib/snoopy_afip/core_ext/string.rb", "lib/snoopy_afip/version.rb", "spec/snoopy_afip/auth_data_spec.rb", "spec/snoopy_afip/authorizer_spec.rb", "spec/snoopy_afip/bill_spec.rb", "spec/spec_helper.rb", "wsaa-client.sh"]
@@ -21,48 +21,9 @@ Gem::Specification.new do |s|
   s.summary = "Adaptador AFIP wsfe."
   s.test_files = ["spec/snoopy_afip/auth_data_spec.rb", "spec/snoopy_afip/authorizer_spec.rb", "spec/snoopy_afip/bill_spec.rb", "spec/spec_helper.rb"]
 
-  if s.respond_to? :specification_version then
-    s.specification_version = 3
-
-    if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
-      s.add_runtime_dependency(%q<savon>, ["= 2.4.0"])
-      s.add_runtime_dependency(%q<nokogiri>, ["~> 1.6"])
-      s.add_runtime_dependency(%q<wasabi>, ["~> 3.2.3"])
-      s.add_runtime_dependency(%q<akami>, ["~> 1.1"])
-      s.add_runtime_dependency(%q<nori>, ["~> 2.3.0"])
-      # s.add_development_dependency(%q<ruby-debug>, [">= 0"])
-      # s.add_development_dependency(%q<ruby-debug-base19>, ["= 0.11.24"])
-      # s.add_development_dependency(%q<ruby-debug19>, ["= 0.11.6"])
-      # s.add_development_dependency(%q<rspec>, ["~> 2.4.0"])
-      # s.add_development_dependency(%q<bundler>, ["~> 1.0.0"])
-      # s.add_development_dependency(%q<jeweler>, ["~> 1.5.1"])
-      # s.add_development_dependency(%q<rcov>, [">= 0"])
-    else
-      s.add_dependency(%q<savon>, ["= 2.4.0"])
-      s.add_dependency(%q<nokogiri>, ["~> 1.6"])
-      s.add_dependency(%q<wasabi>, ["~> 3.2.3"])
-      s.add_dependency(%q<akami>, ["~> 1.1"])
-      s.add_dependency(%q<nori>, ["~> 2.3.0"])
-      # s.add_dependency(%q<ruby-debug>, [">= 0"])
-      # s.add_dependency(%q<ruby-debug-base19>, ["= 0.11.24"])
-      # s.add_dependency(%q<ruby-debug19>, ["= 0.11.6"])
-      # s.add_dependency(%q<rspec>, ["~> 2.4.0"])
-      # s.add_dependency(%q<bundler>, ["~> 1.0.0"])
-      # s.add_dependency(%q<jeweler>, ["~> 1.5.1"])
-      # s.add_dependency(%q<rcov>, [">= 0"])
-    end
-  else
-    s.add_dependency(%q<savon>, ["= 2.4.0"])
-    s.add_dependency(%q<nokogiri>, ["~> 1.6"])
-    s.add_dependency(%q<wasabi>, ["~> 3.2.3"])
-    s.add_dependency(%q<akami>, ["~> 1.1"])
-    s.add_dependency(%q<nori>, ["~> 2.3.0"])
-    # s.add_dependency(%q<ruby-debug>, [">= 0"])
-    # s.add_dependency(%q<ruby-debug-base19>, ["= 0.11.24"])
-    # s.add_dependency(%q<ruby-debug19>, ["= 0.11.6"])
-    # s.add_dependency(%q<rspec>, ["~> 2.4.0"])
-    # s.add_dependency(%q<bundler>, ["~> 1.0.0"])
-    # s.add_dependency(%q<jeweler>, ["~> 1.5.1"])
-    # s.add_dependency(%q<rcov>, [">= 0"])
-  end
+  s.add_runtime_dependency('savon', ["~> 2.4.0"])
+  s.add_runtime_dependency('nokogiri', ["~> 1.6"])
+  s.add_runtime_dependency('wasabi', ["~> 3.2.3"])
+  s.add_runtime_dependency('akami', ["~> 1.2"])
+  s.add_runtime_dependency('nori', ["~> 2.3.0"])
 end

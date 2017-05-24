@@ -10,7 +10,7 @@ module Snoopy
                   :response, :cbte_asoc_num, :cbte_asoc_pto_venta, :numero, :alicivas,
                   :pkey, :cert, :cuit, :punto_venta, :condicion_iva_emisor, :auth, :errors,
                   :cae, :resultado, :fecha_proceso, :vencimiento_cae, :fecha_comprobante,
-                  :observaciones, :events, :imp_iva
+                  :observaciones, :events, :imp_iva, :backtrace
 
     def initialize(attrs={})
       @pkey                   = attrs[:pkey]
@@ -34,6 +34,7 @@ module Snoopy
       @errors                 = []
       @observaciones          = []
       @events                 = []
+      @backtrace              = ""
     end
 
     def exchange_rate
@@ -50,7 +51,7 @@ module Snoopy
     end
 
     def iva_sum
-      @iva_sum = alicivas.collect{|aliciva| aliciva[:importe] }.sum.to_f.round_with_precision(2)
+      @iva_sum = alicivas.collect{|aliciva| if aliciva.has_key?('importe'); aliciva['importe'].to_f; else aliciva[:importe].to_f end }.sum.to_f.round_with_precision(2)
     end
 
     def cbte_type
@@ -83,7 +84,8 @@ module Snoopy
     end
 
     def build_body_request
-      today = Time.new.in_time_zone('Buenos Aires').strftime('%Y%m%d')
+      # today = Time.new.in_time_zone('Buenos Aires').strftime('%Y%m%d')
+      today = Date.today.strftime('%Y%m%d')
 
       fecaereq = {"FeCAEReq" => {
                     "FeCabReq" => build_header,
@@ -98,11 +100,12 @@ module Snoopy
                         "ImpOpEx"     => 0.00,
                         "ImpTrib"     => 0.00 }}}}
 
-      unless condicion_iva_emisor == :responsable_monotributo
+      unless condicion_iva_emisor.to_sym == :responsable_monotributo
         _alicivas = alicivas.collect do |aliciva|
-          { "Id"      => Snoopy::ALIC_IVA[aliciva[:id]],
-            "BaseImp" => aliciva[:base_imp],
-            "Importe" => aliciva[:importe] }
+          id = if aliciva.has_key?('id'); aliciva['id']; else aliciva[:id]; end
+          importe = if aliciva.has_key?('importe'); aliciva['importe']; else aliciva[:importe]; end
+          base_imp = if aliciva.has_key?('base_imp'); aliciva['base_imp']; else aliciva[:base_imp]; end
+          { "Id" => Snoopy::ALIC_IVA[id], "BaseImp" => base_imp, "Importe" => importe }
         end
         fecaereq["FeCAEReq"]["FeDetReq"]["FECAEDetRequest"]["Iva"] = { "AlicIva" => _alicivas }
       end
@@ -141,6 +144,7 @@ module Snoopy
         end
       rescue => e #Curl::Err::GotNothingError, Curl::Err::TimeoutError
         @errors = e.message
+        @backtrace = e.backtrace
       end
       !@response.nil?
     end
@@ -157,6 +161,7 @@ module Snoopy
         result[:app_server] == "OK" and result[:db_server] == "OK" and result[:auth_server] == "OK"
       rescue => e
         @errors << e.message
+        @backtrace = e.backtrace
         false
       end
     end
@@ -240,6 +245,7 @@ module Snoopy
         bill.parse_fe_comp_consultar_response
       rescue => e
         bill.errors << e.message
+        bill.backtrace = e.backtrace
       end
       bill
     end
