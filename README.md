@@ -19,16 +19,22 @@ O instala la gema a mano:
 
 ## Antes que nada
 
-Link con el manual para desarrolladores
+* Link con el manual para desarrolladores.
 
 http://wswhomo.afip.gov.ar/fiscaldocs/WSAA/Especificacion_Tecnica_WSAA_1.2.0.pdf
 
-Es recomendable descargar los wsdl para evitar tener que pedirlo en cada request
+* Es recomendable descargar los wsdl para evitar tener que pedirlo en cada request
 
 https://wswhomo.afip.gov.ar/wsfev1/service.asmx?wsdl  Para entorno de desarrollo
 https://servicios1.afip.gov.ar/wsfev1/service.asmx?WSDL Para entorno de producción
 
-## Uso
+* Explicación detallada de los pasos a seguir para obtener el certificado para emitir facturas electrónicas.
+
+https://www.afip.gob.ar/ws/WSAA/WSAA.ObtenerCertificado.pdf
+
+
+
+## USO
 
 ### Inicialización de parametros generales
 
@@ -38,10 +44,10 @@ Snoopy.default_concepto  = 'Servicios'
 Snoopy.default_documento = 'CUIT'
 # Para el caso de produccion
 Snoopy.auth_url    = "https://wsaa.afip.gov.ar/ws/services/LoginCms" 
-Snoopy.service_url = "prod.wsdl"
+Snoopy.service_url = "prod.wsdl" # PATH del wdsl de producción descargado
 # Para el caso de desarrollo
 Snoopy.auth_url    = "https://wsaahomo.afip.gov.ar/ws/services/LoginCms"
-Snoopy.service_url = "testing.wsdl"
+Snoopy.service_url = "testing.wsdl" # PATH del wdsl de testing descargado
 ```
 
 En caso de trabajar con `Ruby on Rails`, es recomendable crear un archivo con esta conf en `config/initializers`.
@@ -60,8 +66,8 @@ Snoopy::AuthData.generate_certificate_request(pkey_path, subj_o, subj_cn, subj_c
 
 * `pkey_path`: Ruta absoluta de la llave privada.
 * `subj_o`: Nombre de la compañia.
-* `subj_cn`: # Hostname del server que generar las solicitudesm en ruby se obtiene con %x(hostname).chomp
-* `subj_cuit`: # Cuit registrado en la AFIP de la compañia que emita facturas.
+* `subj_cn`: Hostname del server que generar las solicitudesm en ruby se obtiene con `%x(hostname).chomp`
+* `subj_cuit`: Cuit registrado en la AFIP de la compañia que emita facturas.
 * `certificate_request_path`: Ruta donde queres que se guarde el pedido de certificado.
 
 Una vez generado este archivo debe hacerse el tramite en el sitio web de la AFIP para obtener el certificado que les permitirá emitir facturas al webservice.
@@ -76,38 +82,38 @@ Una vez generado este archivo debe hacerse el tramite en el sitio web de la AFIP
 
 ### Verficar comunicación con servicio
 
-Por medio del siguiente comando es posible verificar si la comunicación con el webservice de la AFIP se establecio de manera correcta.
+Una vez obtenido el certificado desde el sitio web de la AFIP, es recomendable verificar si la comunicación con el webservice de la AFIP se establecio de manera correcta, para asegurarse de que el certificado es correcto.
 
 ```ruby
 Snoopy::AuthData.generate_auth_file(data)
 ```
 
-* `data[:pkey]`         # PATH de la clave privada (Utilizada para generar el pedido del certificado).
-* `data[:cert]`         # PATH del certificado otorgado por la AFIP.
-* `data[:cuit]`         # CUIT del emisor de la factura.
-* `data[:sale_point]`   # Punto de venta del emisor de la factura.
-* `data[:own_iva_cond]` # Condición de iva del emiso de factura. [:responsable_monotributo : :responsable_inscripto]
+* `data[:pkey]`         PATH de la clave privada (Utilizada para generar el pedido del certificado).
+* `data[:cert]`         PATH del certificado otorgado por la AFIP.
+* `data[:cuit]`         CUIT del emisor de la factura.
+* `data[:sale_point]`   Punto de venta del emisor de la factura.
+* `data[:own_iva_cond]` Condición de iva del emiso de factura. [`:responsable_monotributo` o `:responsable_inscripto`]
 
 ### Informar factura
 Siempre para informar una factura debe de definirse un hash con los siguientes key, value:
 
-* `attrs[:pkey]`                # path de la clave privada (Utilizada para generar el pedido del certificado).
-* `attrs[:cert]`                # path del certificado otorgado por la afip.
-* `attrs[:cuit]`                # CUIT del emisor de la factura.
-* `attrs[:sale_point]`          # Punto de venta del emisor de la factura.
-* `attrs[:own_iva_cond]`        # Condición de iva del emisor de la factura
-* `attrs[:net]`                 # Monto neto por defecto es 0
-* `attrs[:documento]`           # Tipo de documento a utilizar, por default Snoopy.default_documento ["CUIT" "DNI" "Doc. (Otro)"]
-* `attrs[:moneda]`              # Tipo de moneda a utilizar por default Snoopy.default_moneda
-* `attrs[:concepto]`            # Concepto de la factura por defecto Snoopy.default_concepto
-* `attrs[:doc_num]`             # Numero de documento
-* `attrs[:fch_serv_desde]`      # Inicio de vigencia de la factura
-* `attrs[:fch_serv_hasta]`      # Fin de vigencia de la factura
-* `attrs[:cbte_asoc_pto_venta]` # Esto es el punto de venta de la factura para la nota de crédito (Solo pasar si se esta creando una nota de crédito)
-* `attrs[:cbte_asoc_num]`       # Esto es el numero de factura para la nota de crédito (Solo pasar si se esta creando una nota de crédito)
-* `attrs[:iva_cond]`            # Condición de iva
-* `attrs[:imp_iva]`             # Monto total de impuestos
-* `attrs[:alicivas]`            # Impuestos asociados a la factura
+* `attrs[:pkey]`                PATH de la clave privada (Utilizada para generar el pedido del certificado).
+* `attrs[:cert]`                PATH del certificado otorgado por la afip.
+* `attrs[:cuit]`                CUIT del emisor de la factura.
+* `attrs[:sale_point]`          Punto de venta del emisor de la factura.
+* `attrs[:own_iva_cond]`        Condición de iva del emisor de la factura. [`:responsable_monotributo` o `:responsable_inscripto`]
+* `attrs[:net]`                 Monto neto por defecto es 0.
+* `attrs[:documento]`           Tipo de documento a utilizar, por default Snoopy.default_documento [`"CUIT"`, `"DNI"`, `"Doc. (Otro)"`].
+* `attrs[:moneda]`              Tipo de moneda a utilizar por default Snoopy.default_moneda.
+* `attrs[:concepto]`            Concepto de la factura por defecto Snoopy.default_concepto.
+* `attrs[:doc_num]`             Numero de documento.
+* `attrs[:fch_serv_desde]`      Inicio de vigencia de la factura.
+* `attrs[:fch_serv_hasta]`      Fin de vigencia de la factura.
+* `attrs[:cbte_asoc_pto_venta]` Esto es el punto de venta de la factura para la nota de crédito (Solo pasar si se esta creando una nota de crédito).
+* `attrs[:cbte_asoc_num]`       Esto es el numero de factura para la nota de crédito (Solo pasar si se esta creando una nota de crédito).
+* `attrs[:iva_cond]`            Condición de iva.
+* `attrs[:imp_iva]`             Monto total de impuestos.
+* `attrs[:alicivas]`            Impuestos asociados a la factura.
 
 El `attrs[:alicivas]` discrimina la información de los items. Es posible que en la factura se discrimine diferentes items con diferentes impuestos. Para ello el `attrs[:alicivas]` es un arreglo de hashes. Donde cada uno de ellos contenga la información sobre un determinado impuesto.
 
@@ -120,12 +126,12 @@ El `attrs[:alicivas]` discrimina la información de los items. Es posible que en
 Por ejemplo si se tiene 5 items, donde 3 de ellos tienen un impuesto del 10.5% y los 2 restantes del 21%. Los primeros 3 deben, se debera de crear dos hashes de la siguientes forma.
 
 ```ruby
-attrs[:alicivas] [ { id: (10.5 / 100 ).to_s 
-                     importe: X,            # De los 3 items 10.5
-                     base_imp: Y },
-                   { id: (21 / 100 ).to_s 
-                     importe: X,            # De los 2 items de 21
-                     base_imp: Y } ]
+attrs[:alicivas] = [ { id: (10.5 / 100 ).to_s 
+                       importe: X,            # De los 3 items de 10.5
+                       base_imp: Y },
+                     { id: (21 / 100 ).to_s 
+                       importe: X,            # De los 2 items de 21
+                       base_imp: Y } ]
 ```
 Donde: 
 
