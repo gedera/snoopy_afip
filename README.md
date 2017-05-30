@@ -39,9 +39,9 @@ https://www.afip.gob.ar/ws/WSAA/WSAA.ObtenerCertificado.pdf
 ### Inicialización de parametros generales
 
 ```ruby
-Snoopy.default_moneda    = :peso
-Snoopy.default_concepto  = 'Servicios'
-Snoopy.default_documento = 'CUIT'
+Snoopy.default_currency      = :peso
+Snoopy.default_concept       = 'Servicios'
+Snoopy.default_document_type = 'CUIT'
 # Para el caso de produccion
 Snoopy.auth_url    = "https://wsaa.afip.gov.ar/ws/services/LoginCms" 
 Snoopy.service_url = "prod.wsdl" # PATH del wdsl de producción descargado
@@ -97,41 +97,41 @@ Snoopy::AuthData.generate_auth_file(data)
 ### Informar factura
 Siempre para informar una factura debe de definirse un hash con los siguientes key, value:
 
-* `attrs[:pkey]`                PATH de la clave privada (Utilizada para generar el pedido del certificado).
-* `attrs[:cert]`                PATH del certificado otorgado por la afip.
-* `attrs[:cuit]`                CUIT del emisor de la factura.
-* `attrs[:sale_point]`          Punto de venta del emisor de la factura.
-* `attrs[:own_iva_cond]`        Condición de iva del emisor de la factura. [`:responsable_monotributo` o `:responsable_inscripto`]
-* `attrs[:net]`                 Monto neto por defecto es 0.
-* `attrs[:documento]`           Tipo de documento a utilizar, por default Snoopy.default_documento [`"CUIT"`, `"DNI"`, `"Doc. (Otro)"`].
-* `attrs[:moneda]`              Tipo de moneda a utilizar por default Snoopy.default_moneda.
-* `attrs[:concepto]`            Concepto de la factura por defecto Snoopy.default_concepto.
-* `attrs[:doc_num]`             Numero de documento.
-* `attrs[:fch_serv_desde]`      Inicio de vigencia de la factura.
-* `attrs[:fch_serv_hasta]`      Fin de vigencia de la factura.
-* `attrs[:cbte_asoc_pto_venta]` Esto es el punto de venta de la factura para la nota de crédito (Solo pasar si se esta creando una nota de crédito).
-* `attrs[:cbte_asoc_num]`       Esto es el numero de factura para la nota de crédito (Solo pasar si se esta creando una nota de crédito).
-* `attrs[:iva_cond]`            Condición de iva.
-* `attrs[:imp_iva]`             Monto total de impuestos.
-* `attrs[:alicivas]`            Impuestos asociados a la factura.
+* `attrs[:pkey]`                    PATH de la clave privada (Utilizada para generar el pedido del certificado).
+* `attrs[:cert]`                    PATH del certificado otorgado por la afip.
+* `attrs[:cuit]`                    CUIT del emisor de la factura.
+* `attrs[:sale_point]`              Punto de venta del emisor de la factura.
+* `attrs[:own_iva_cond]`            Condición de iva del emisor de la factura. [`:responsable_monotributo` o `:responsable_inscripto`]
+* `attrs[:net]`                     Monto neto por defecto es 0.
+* `attrs[:document_type]`           Tipo de documento a utilizar, por default Snoopy.default_documento [`"CUIT"`, `"DNI"`, `"Doc. (Otro)"`].
+* `attrs[:currency]`                Tipo de moneda a utilizar por default Snoopy.default_moneda.
+* `attrs[:concept]`                 Concepto de la factura por defecto Snoopy.default_concepto.
+* `attrs[:doc_num]`                 Numero de documento.
+* `attrs[:service_date_from]`       Inicio de vigencia de la factura.
+* `attrs[:service_date_to]`         Fin de vigencia de la factura.
+* `attrs[:cbte_asoc_to_sale_point]` Esto es el punto de venta de la factura para la nota de crédito (Solo pasar si se esta creando una nota de crédito).
+* `attrs[:cbte_asoc_num]`           Esto es el numero de factura para la nota de crédito (Solo pasar si se esta creando una nota de crédito).
+* `attrs[:iva_cond]`                Condición de iva.
+* `attrs[:imp_iva]`                 Monto total de impuestos.
+* `attrs[:alicivas]`                Impuestos asociados a la factura.
 
 El `attrs[:alicivas]` discrimina la información de los items. Es posible que en la factura se discrimine diferentes items con diferentes impuestos. Para ello el `attrs[:alicivas]` es un arreglo de hashes. Donde cada uno de ellos contenga la información sobre un determinado impuesto.
 
 ```ruby
-{ id:       tax_rate.round_with_precision(2),    # Porcentaje. Ej: "0.105", "0.21", "0.27"
-  importe:  tax_amount.round_with_precision(2),  # Monto total del item.
-  base_imp: net_amount.round_with_precision(2) } # Monto de base imponible.
+{ id:         tax_rate.round_with_precision(2),    # Porcentaje. Ej: "0.105", "0.21", "0.27"
+  amount:     tax_amount.round_with_precision(2),  # Monto total del item.
+  net_amount: net_amount.round_with_precision(2) } # Monto de base imponible.
 ```
 
 Por ejemplo si se tiene 5 items, donde 3 de ellos tienen un impuesto del 10.5% y los 2 restantes del 21%. Los primeros 3 deben, se debera de crear dos hashes de la siguientes forma.
 
 ```ruby
 attrs[:alicivas] = [ { id: (10.5 / 100 ).to_s 
-                       importe: X,            # De los 3 items de 10.5
-                       base_imp: Y },
+                       amount: X,            # De los 3 items de 10.5
+                       net_amount: Y },
                      { id: (21 / 100 ).to_s 
-                       importe: X,            # De los 2 items de 21
-                       base_imp: Y } ]
+                       amount: X,            # De los 2 items de 21
+                       net_amount: Y } ]
 ```
 Donde: 
 
@@ -164,13 +164,13 @@ bill.cae_request # Informo Afip la factura.
 Una vez llamado al metodo `cae_request` podemos verificar el resultado en el objeto bill.
 
 ```ruby
-bill.aprobada? # Salio todo bien en la AFIP con la factura informada.
-bill.parcial? # Aprobada parcialmente.
-bill.rechazada? # Rechazada algo esta mal.
+bill.approved? # Salio todo bien en la AFIP con la factura informada.
+bill.partial_approved? # Aprobada parcialmente.
+bill.rejected? # Rechazada algo esta mal.
 bill.response # Respuesta completa de AFIP.
-bill.errors # Errores generados dentro de la gema o  entregados por la AFIP.
-bill.observaciones # Observaciones entregadas por la AFIP.
 bill.events # Eventos entregados por la AFIP.
+bill.observations # Observaciones entregadas por la AFIP.
+bill.errors # Errores generados dentro de la gema o  entregados por la AFIP.
 bill.backtrace # En caso de ocurrir un error dentro de la gema.
 ```
 ## License

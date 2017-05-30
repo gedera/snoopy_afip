@@ -21,9 +21,9 @@ Gem::Specification.new do |s|
   s.summary = "Adaptador AFIP wsfe."
   s.test_files = ["spec/snoopy_afip/auth_data_spec.rb", "spec/snoopy_afip/authorizer_spec.rb", "spec/snoopy_afip/bill_spec.rb", "spec/spec_helper.rb"]
 
-  s.add_runtime_dependency('savon', ["~> 2.4.0"])
+  s.add_runtime_dependency('savon', ["~> 2.4"])
   s.add_runtime_dependency('nokogiri', ["~> 1.6"])
-  s.add_runtime_dependency('wasabi', ["~> 3.2.3"])
+  s.add_runtime_dependency('wasabi', ["~> 3.2"])
   s.add_runtime_dependency('akami', ["~> 1.2"])
-  s.add_runtime_dependency('nori', ["~> 2.3.0"])
+  s.add_runtime_dependency('nori', ["~> 2.3"])
 end

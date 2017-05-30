@@ -1,3 +1,4 @@
+# coding: utf-8
 require "bundler/setup"
 require "snoopy_afip/version"
 require "snoopy_afip/constants"
@@ -16,8 +17,7 @@ module Snoopy
 
 
   extend self
-  attr_accessor :cuit, :sale_point, :service_url, :default_documento, :pkey, :cert,
-    :default_concepto, :default_moneda, :own_iva_cond, :verbose, :auth_url
+  attr_accessor :cuit, :sale_point, :service_url, :default_document_type, :pkey, :cert, :default_concept, :default_currency, :own_iva_cond, :verbose, :auth_url
 
   def auth_hash
     {"Token" => Snoopy::TOKEN, "Sign"  => Snoopy::SIGN, "Cuit"  => Snoopy.cuit}
