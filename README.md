@@ -21,7 +21,8 @@ O instala la gema a mano:
 
 * Link con el manual para desarrolladores.
 
-http://wswhomo.afip.gov.ar/fiscaldocs/WSAA/Especificacion_Tecnica_WSAA_1.2.0.pdf
+http://www.afip.gov.ar/fe/documentos/manual_desarrollador_COMPG_v2_4.pdf
+http://www.afip.gob.ar/fe/documentos/manual_desarrollador_COMPG_v2_9.pdf
 
 * Es recomendable descargar los wsdl para evitar tener que pedirlo en cada request
 
