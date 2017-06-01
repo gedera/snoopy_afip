@@ -2,6 +2,7 @@
 require "bundler/setup"
 require "snoopy_afip/version"
 require "snoopy_afip/constants"
+require "snoopy_afip/exceptions"
 require "savon"
 require "snoopy_afip/core_ext/float"
 require "snoopy_afip/core_ext/hash"

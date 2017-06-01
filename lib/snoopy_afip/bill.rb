@@ -9,7 +9,8 @@ module Snoopy
                   :due_date, :aliciva_id, :body, :response, :cbte_asoc_num, :cae, :service_date_to,
                   :number, :alicivas, :pkey, :cert, :cuit, :sale_point, :auth, :service_date_from,
                   :due_date_cae, :voucher_date, :process_date, :imp_iva, :cbte_asoc_sale_point,
-                  :receiver_iva_cond, :issuer_iva_cond, :observations, :events, :errors, :backtrace
+                  :receiver_iva_cond, :issuer_iva_cond, :observations, :events, :errors, :backtrace,
+                  :exceptions
 
     def initialize(attrs={})
       @pkey                    = attrs[:pkey]
@@ -34,6 +35,7 @@ module Snoopy
       @service_date_from       = attrs[:service_date_from]
       @receiver_iva_cond       = attrs[:iva_cond]
       @cbte_asoc_to_sale_point = attrs[:cbte_asoc_to_sale_point] # Esto es el punto de venta de la factura para la nota de credito
+      @exceptions               = []
     end
 
     def exchange_rate
@@ -69,82 +71,88 @@ module Snoopy
                     :namespaces => {"xmlns" => "http://ar.gov.afip.dif.FEV1/"} )
     end
 
-    def set_bill_number!
-      resp = client.call( :fe_comp_ultimo_autorizado,
-                          :message => { "Auth" => generate_auth_file, "PtoVta" => sale_point, "CbteTipo" => cbte_type })
-
-      resp_errors = resp.hash[:envelope][:body][:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:errors]
-      resp_errors.each_value { |value| @errors << "Código #{value[:code]}: #{value[:msg]}" } unless resp_errors.nil?
-      @number = resp.to_hash[:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:cbte_nro].to_i + 1 if @errors.empty?
+    def client_call service, action=nil
+      begin
+        resp = Timeout::timeout(5) do
+          sleep 10
+          client.call(service, action).body
+        end
+      rescue Timeout::Error
+        raise(Snoopy::AfipTimeout.new)
+      end
     end
 
-    def build_header
-      { "CantReg" => "1", "CbteTipo" => cbte_type, "PtoVta" => sale_point }
+    def set_bill_number!
+      # resp = Timeout::timeout(5) { client.call( :fe_comp_ultimo_autorizado,
+      #                                           :message => { "Auth" => generate_auth_file,   "PtoVta" => sale_point, "CbteTipo" => cbte_type })  }
+      resp = client_call( :fe_comp_ultimo_autorizado,
+                          :message => { "Auth" => generate_auth_file, "PtoVta" => sale_point, "CbteTipo" => cbte_type } )
+
+      begin
+        resp_errors = resp.hash[:envelope][:body][:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:errors]
+        resp_errors.each_value { |value| @errors << "Código #{value[:code]}: #{value[:msg]}" } unless resp_errors.nil?
+        @number = resp.to_hash[:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:cbte_nro].to_i + 1 if @errors.empty?
+      rescue => e
+        raise Snoopy::Exception::SetBillNumberParser.new(e.message, e.backtrace)
+      end
     end
 
     def build_body_request
       # today = Time.new.in_time_zone('Buenos Aires').strftime('%Y%m%d')
       today = Date.today.strftime('%Y%m%d')
+      begin
+        fecaereq = {"FeCAEReq" => { "FeCabReq" => { "CantReg" => "1", "CbteTipo" => cbte_type, "PtoVta" => sale_point },
+                                    "FeDetReq" => { "FECAEDetRequest" => { "Concepto"   => Snoopy::CONCEPTS[concept],
+                                                                           "DocTipo"    => Snoopy::DOCUMENTS[document_type],
+                                                                           "CbteFch"    => today,
+                                                                           "ImpTotConc" => 0.00,
+                                                                           "MonId"      => Snoopy::CURRENCY[currency][:code],
+                                                                           "MonCotiz"   => exchange_rate,
+                                                                           "ImpOpEx"    => 0.00,
+                                                                           "ImpTrib"    => 0.00 }}}}
 
-      fecaereq = {"FeCAEReq" => {
-                    "FeCabReq" => build_header,
-                    "FeDetReq" => {
-                      "FECAEDetRequest" => {
-                        "Concepto"    => Snoopy::CONCEPTS[concept],
-                        "DocTipo"     => Snoopy::DOCUMENTS[document_type],
-                        "CbteFch"     => today,
-                        "ImpTotConc"  => 0.00,
-                        "MonId"       => Snoopy::CURRENCY[currency][:code],
-                        "MonCotiz"    => exchange_rate,
-                        "ImpOpEx"     => 0.00,
-                        "ImpTrib"     => 0.00 }}}}
-
-      unless issuer_iva_cond.to_sym == :responsable_monotributo
-        _alicivas = alicivas.collect do |aliciva|
-          id = if aliciva.has_key?('id'); aliciva['id']; else aliciva[:id]; end
-          importe = if aliciva.has_key?('importe'); aliciva['importe']; else aliciva[:importe]; end
-          base_imp = if aliciva.has_key?('taxeable_base'); aliciva['taxeable_base']; else aliciva[:taxeable_base]; end
-          { "Id" => Snoopy::ALIC_IVA[id], "BaseImp" => base_imp, "Importe" => importe }
+        unless issuer_iva_cond.to_sym == :responsable_monotributo
+          _alicivas = alicivas.collect do |aliciva|
+            id = aliciva.has_key?('id') ? aliciva['id'] : aliciva[:id]
+            amount = aliciva.has_key?('amount') ? aliciva['amount'] : aliciva[:amount]
+            base_imp = aliciva.has_key?('taxeable_base') ? aliciva['taxeable_base'] : aliciva[:taxeable_base]
+            { 'Id' => Snoopy::ALIC_IVA[id], 'BaseImp' => base_imp, 'Importe' => amount }
+          end
+          fecaereq["FeCAEReq"]["FeDetReq"]["FECAEDetRequest"]["Iva"] = { "AlicIva" => _alicivas }
         end
-        fecaereq["FeCAEReq"]["FeDetReq"]["FECAEDetRequest"]["Iva"] = { "AlicIva" => _alicivas }
+
+        detail = fecaereq["FeCAEReq"]["FeDetReq"]["FECAEDetRequest"]
+
+        detail["DocNro"]    = document_num
+        detail["ImpNeto"]   = total_net.to_f
+        detail["ImpIVA"]    = iva_sum
+        detail["ImpTotal"]  = total
+        detail["CbteDesde"] = detail["CbteHasta"] = number
+
+        unless concept == "Productos"
+          detail.merge!({ "FchServDesde" => service_date_from || today,
+                          "FchServHasta" => service_date_to || today,
+                          "FchVtoPago"   => due_date       || today})
+        end
+
+        if self.receiver_iva_cond.to_s.include?("nota_credito")
+          detail.merge!({"CbtesAsoc" => {"CbteAsoc" => {"Nro"    => cbte_asoc_num,
+                                                        "PtoVta" => cbte_asoc_to_sale_point,
+                                                        "Tipo"   => cbte_type }}})
+        end
+
+        @body = { "Auth" => generate_auth_file }.merge!(fecaereq)
+      rescue => e
+        raise Snoopy::Exception::BuildBodyRequest.new(e.message, e.backtrace)
       end
-
-      detail = fecaereq["FeCAEReq"]["FeDetReq"]["FECAEDetRequest"]
-
-      detail["DocNro"]    = document_num
-      detail["ImpNeto"]   = total_net.to_f
-      detail["ImpIVA"]    = iva_sum
-      detail["ImpTotal"]  = total
-
-      detail["CbteDesde"] = detail["CbteHasta"] = number
-
-      unless concept == "Productos"
-        detail.merge!({ "FchServDesde" => service_date_from || today,
-                        "FchServHasta" => service_date_to || today,
-                        "FchVtoPago"   => due_date       || today})
-      end
-
-      if self.receiver_iva_cond.to_s.include?("nota_credito")
-        detail.merge!({"CbtesAsoc" => {"CbteAsoc" => {"Nro"    => cbte_asoc_num,
-                                                      "PtoVta" => cbte_asoc_to_sale_point,
-                                                      "Tipo"   => cbte_type }}})
-      end
-
-      @body = { "Auth" => generate_auth_file }.merge!(fecaereq)
     end
 
     def cae_request
-      begin
-        set_bill_number!
-        if @errors.empty?
-          build_body_request
-          @response = client.call( :fecae_solicitar, :message => body ).body
-          parse_fecae_solicitar_response
-        end
-      rescue => e #Curl::Err::GotNothingError, Curl::Err::TimeoutError
-        @errors = e.message
-        @backtrace = e.backtrace
-      end
+      set_bill_number!
+      build_body_request
+      # @response = Timeout::timeout(5) { client.call( :fecae_solicitar, :message => body ).body }
+      @response = client_call( :fecae_solicitar, :message => body )
+      parse_fecae_solicitar_response
       !@response.nil?
     end
 
@@ -154,15 +162,10 @@ module Snoopy
 
     # Para probar que la conexion con afip es correcta, si este metodo devuelve true, es posible realizar cualquier consulta al ws de la AFIP.
     def connection_valid?
-      begin
-        result = client.call(:fe_dummy).body[:fe_dummy_response][:fe_dummy_result]
-        @observations << "app_server: #{result[:app_server]}, db_server: #{result[:db_server]}, auth_server: #{result[:auth_server]}"
-        result[:app_server] == "OK" and result[:db_server] == "OK" and result[:auth_server] == "OK"
-      rescue => e
-        @errors << e.message
-        @backtrace = e.backtrace
-        false
-      end
+      # result = client.call(:fe_dummy).body[:fe_dummy_response][:fe_dummy_result]
+      result = client_call(:fe_dummy)[:fe_dummy_response][:fe_dummy_result]
+      @observations << "app_server: #{result[:app_server]}, db_server: #{result[:db_server]}, auth_server: #{result[:auth_server]}"
+      result[:app_server] == "OK" and result[:db_server] == "OK" and result[:auth_server] == "OK"
     end
 
     def parse_observations(fecae_observations)
@@ -170,8 +173,8 @@ module Snoopy
         fecae_observations.each_value do |obs|
           [obs].flatten.each { |ob| @observations << "Código #{ob[:code]}: #{ob[:msg]}" }
         end
-      rescue
-        @observations << "Ocurrió un error al parsear las observaciones de AFIP"
+      rescue => e
+        @exceptions << Snoopy::Exception::ObservationParser.new(e.message, e.backtrace)
       end
     end
 
@@ -180,8 +183,8 @@ module Snoopy
         fecae_errors.each_value do |errores|
           [errores].flatten.each { |error| @errors << "Código #{error[:code]}: #{error[:msg]}" }
         end
-      rescue
-        @errors << "Ocurrió un error al parsear los errores de AFIP"
+      rescue => e
+        @exceptions << Snoopy::Exception::ErrorParser.new(e.message, e.backtrace)
       end
     end
 
@@ -190,63 +193,68 @@ module Snoopy
         fecae_events.each_value do |events|
           [events].flatten.each { |event| @events << "Código #{event[:code]}: #{event[:msg]}" }
         end
-      rescue
-        @events << "Ocurrió un error al parsear los eventos de AFIP"
+      rescue => e
+        @exceptions << Snoopy::Exception::EventsParser.new(e.message, e.backtrace)
       end
     end
 
     def parse_fecae_solicitar_response
-      fecae_response = @response[:fecae_solicitar_response][:fecae_solicitar_result][:fe_det_resp][:fecae_det_response] rescue {}
-      fe_cab_resp    = @response[:fecae_solicitar_response][:fecae_solicitar_result][:fe_cab_resp] rescue {}
-      fecae_result   = @response[:fecae_solicitar_response][:fecae_solicitar_result] rescue {}
+      begin
+        fecae_response = @response[:fecae_solicitar_response][:fecae_solicitar_result][:fe_det_resp][:fecae_det_response]
+        fe_cab_resp    = @response[:fecae_solicitar_response][:fecae_solicitar_result][:fe_cab_resp]
+        fecae_result   = @response[:fecae_solicitar_response][:fecae_solicitar_result]
 
-      @cae          = fecae_response[:cae]
-      @number       = fecae_response[:cbte_desde]
-      @result       = fecae_response[:resultado]
-      @due_date_cae = fecae_response[:cae_fch_vto]
-      @voucher_date = fecae_response[:cbte_fch]
-      @process_date = fe_cab_resp[:fch_proceso]
+        @cae          = fecae_response[:cae]
+        @number       = fecae_response[:cbte_desde]
+        @result       = fecae_response[:resultado]
+        @due_date_cae = fecae_response[:cae_fch_vto]
+        @voucher_date = fecae_response[:cbte_fch]
+        @process_date = fe_cab_resp[:fch_proceso]
 
-      parse_observations(fecae_response.delete(:observaciones)) if fecae_response.has_key? :observaciones
-      parse_errors(fecae_result[:errors])                       if fecae_result.has_key? :errors
-      parse_events(fecae_result[:events])                       if fecae_result.has_key? :events
+        parse_observations(fecae_response.delete(:observaciones)) if fecae_response.has_key? :observaciones
+        parse_errors(fecae_result[:errors])                       if fecae_result.has_key? :errors
+        parse_events(fecae_result[:events])                       if fecae_result.has_key? :events
+      rescue => e
+        @exceptions << Snoopy::Exception::FecaeResponseParser.new(e.message, e.backtrace)
+      end
     end
 
     def parse_fe_comp_consultar_response
-      result_get               = @response.to_hash[:fe_comp_consultar_response][:fe_comp_consultar_result][:result_get]
-      fe_comp_consultar_result = @response.to_hash[:fe_comp_consultar_response][:fe_comp_consultar_result]
+      begin
+        result_get               = @response.to_hash[:fe_comp_consultar_response][:fe_comp_consultar_result][:result_get]
+        fe_comp_consultar_result = @response.to_hash[:fe_comp_consultar_response][:fe_comp_consultar_result]
 
-      unless result_get.nil?
-        @cae               = result_get[:cod_autorizacion]
-        @imp_iva           = result_get[:imp_iva]
-        @number            = result_get[:cbte_desde]
-        @result            = result_get[:resultado]
-        @document_num      = result_get[:doc_numero]
-        @process_date      = result_get[:fch_proceso]
-        @due_date_cae      = result_get[:fch_vto]
-        @voucher_date      = result_get[:cbte_fch]
-        @service_date_to   = result_get[:fch_serv_hasta]
-        @service_date_from = result_get[:fch_serv_desde]
-        parse_events(result_get[:observaciones]) if result_get.has_key? :observaciones
+        unless result_get.nil?
+          @cae               = result_get[:cod_autorizacion]
+          @imp_iva           = result_get[:imp_iva]
+          @number            = result_get[:cbte_desde]
+          @result            = result_get[:resultado]
+          @document_num      = result_get[:doc_numero]
+          @process_date      = result_get[:fch_proceso]
+          @due_date_cae      = result_get[:fch_vto]
+          @voucher_date      = result_get[:cbte_fch]
+          @service_date_to   = result_get[:fch_serv_hasta]
+          @service_date_from = result_get[:fch_serv_desde]
+          parse_events(result_get[:observaciones]) if result_get.has_key? :observaciones
+        end
+
+        self.parse_events(fe_comp_consultar_result[:errors]) if fe_comp_consultar_result and fe_comp_consultar_result.has_key? :errors
+        self.parse_events(fe_comp_consultar_result[:events]) if fe_comp_consultar_result and fe_comp_consultar_result.has_key? :events
+      rescue => e
+        @exceptions << Snoopy::Exception::FecompConsultResponseParser.new(e.message, e.backtrace)
       end
-
-      self.parse_events(fe_comp_consultar_result[:errors]) if fe_comp_consultar_result and fe_comp_consultar_result.has_key? :errors
-      self.parse_events(fe_comp_consultar_result[:events]) if fe_comp_consultar_result and fe_comp_consultar_result.has_key? :events
     end
 
     def self.bill_request(number, attrs={})
       bill = new(attrs)
-      begin
-        bill.response = bill.client.call( :fe_comp_consultar,
-                                          :message => {"Auth" => bill.generate_auth_file,
-                                                       "FeCompConsReq" => {"CbteTipo" => bill.cbte_type, "PtoVta" => bill.sale_point, "CbteNro" => number.to_s}})
-        bill.parse_fe_comp_consultar_response
-      rescue => e
-        bill.errors << e.message
-        bill.backtrace = e.backtrace
-      end
+      # bill.response = bill.client.call( :fe_comp_consultar,
+      #                                   :message => {"Auth" => bill.generate_auth_file,
+      #                                                "FeCompConsReq" => {"CbteTipo" => bill.cbte_type, "PtoVta" => bill.sale_point, "CbteNro" => number.to_s}})
+      bill.response = bill.client_call( :fe_comp_consultar,
+                                        :message => {"Auth" => bill.generate_auth_file,
+                                                     "FeCompConsReq" => {"CbteTipo" => bill.cbte_type, "PtoVta" => bill.sale_point, "CbteNro" => number.to_s}})
+      bill.parse_fe_comp_consultar_response
       bill
     end
-
   end
 end
