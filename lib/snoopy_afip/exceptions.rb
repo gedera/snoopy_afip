@@ -29,6 +29,9 @@ module Snoopy
 
     class BuildBodyRequest < Exception
     end
+
+    class FecaeSolicitarResultParser < Exception
+    end
   end
 
   class AfipTimeout < Timeout::Error
