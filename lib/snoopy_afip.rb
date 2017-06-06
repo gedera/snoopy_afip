@@ -9,8 +9,6 @@ require "snoopy_afip/core_ext/hash"
 require "snoopy_afip/core_ext/string"
 module Snoopy
 
-  class NullOrInvalidAttribute < StandardError; end
-
   autoload :Authorizer,   "snoopy_afip/authorizer"
   autoload :AuthData,     "snoopy_afip/auth_data"
   autoload :Bill,         "snoopy_afip/bill"

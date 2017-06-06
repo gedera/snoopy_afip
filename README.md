@@ -174,6 +174,14 @@ bill.observations # Observaciones entregadas por la AFIP.
 bill.errors # Errores generados dentro de la gema o  entregados por la AFIP.
 bill.backtrace # En caso de ocurrir un error dentro de la gema.
 ```
+
+### Manejo de excepciones
+
+Hay errores que producirán que la gema generé un raise, estos son los casos que se produzcan errores previo o durante la comunicación con la AFIP. En estos casos se produce un `raise` debido a que no se aseguro respuesta valida de la AFIP.
+
+Existe otro caso que se produzca un error posterior a la comunicación, en este caso se pudo obtener una respuesta de AFIP (puede consultarse `bill.response` para obtener la respuesta completa de la AFIP), pero se producierón errores en el parseo de la misma, para ellos se puede consultar las exceptiones generadas por los parseadores con `bill.exceptions`. 
+Se devulven excepciones debido a que si bien se ha producido un error, la comunicación con la AFIP se realizo exitosamente, pero errores al momento de parsear la respuesta, en esta situación no es posible saber si se emitio con exito o no la factura. Esto es una contingencia de que AFIP cambien el XML lo cual producirá error al momento de parsear la respuesta.
+
 ## License
 
 The gem is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).

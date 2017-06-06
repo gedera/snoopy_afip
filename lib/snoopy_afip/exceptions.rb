@@ -9,6 +9,9 @@ module Snoopy
       end
     end
 
+    class NullOrInvalidAttribute < StandardError
+    end
+
     class ObservationParser < Exception
     end
 
