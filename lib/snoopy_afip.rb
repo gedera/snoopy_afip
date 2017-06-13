@@ -8,11 +8,10 @@ require "snoopy_afip/core_ext/float"
 require "snoopy_afip/core_ext/hash"
 require "snoopy_afip/core_ext/string"
 module Snoopy
-
-  autoload :Authorizer,   "snoopy_afip/authorizer"
-  autoload :AuthData,     "snoopy_afip/auth_data"
-  autoload :Bill,         "snoopy_afip/bill"
-  autoload :Constants,    "snoopy_afip/constants"
+  autoload :Authorizer, "snoopy_afip/authorizer"
+  autoload :AuthData,   "snoopy_afip/auth_data"
+  autoload :Bill,       "snoopy_afip/bill"
+  autoload :Constants,  "snoopy_afip/constants"
 
 
   extend self
@@ -55,3 +54,4 @@ module Snoopy
 #  end
 
 end
+

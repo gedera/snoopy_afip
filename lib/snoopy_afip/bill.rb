@@ -3,15 +3,26 @@ module Snoopy
   class Bill
     include AuthData
 
-    attr_reader :base_imp, :total
+    #attr_reader :total
 
-    attr_accessor :total_net, :document_num, :document_type, :concept, :currency, :result,
+    attr_accessor :total_net, :document_num, :document_type, :concept, :currency, :result, :issuer_iva_cond,
                   :due_date, :aliciva_id, :body, :response, :cbte_asoc_num, :cae, :service_date_to,
                   :number, :alicivas, :pkey, :cert, :cuit, :sale_point, :auth, :service_date_from,
                   :due_date_cae, :voucher_date, :process_date, :imp_iva, :cbte_asoc_sale_point,
-                  :receiver_iva_cond, :issuer_iva_cond, :observations, :events, :errors, :exceptions
+                  :receiver_iva_cond, :issuer_iva_cond, :afip_observations, :afip_events, :afip_errors, :errors
+
+    ATTRIBUTES = [ :total_net, :document_num, :document_type, :concept, :currency, :result, :issuer_iva_cond,
+                   :due_date, :aliciva_id, :body, :response, :cbte_asoc_num, :cae, :service_date_to,
+                   :number, :alicivas, :pkey, :cert, :cuit, :sale_point, :auth, :service_date_from,
+                   :due_date_cae, :voucher_date, :process_date, :imp_iva, :cbte_asoc_sale_point,
+                   :receiver_iva_cond, :issuer_iva_cond, :afip_observations, :afip_events, :afip_errors, :errors ]
+
+    TAX_ATTRIBUTES = [ :id, :amount, :taxeable_base ]
+
+    ATTRIBUTES_PRECENSE = [:total_net, :concept, :receiver_iva_cond, :alicivas, :document_type, :document_num, :service_date_from, :service_date_to, :pkey, :cert, :cuit, :sale_point, :issuer_iva_cond]
 
     def initialize(attrs={})
+      # attrs = attrs.deep_symbolize_keys
       @pkey                    = attrs[:pkey]
       @cert                    = attrs[:cert]
       @cuit                    = attrs[:cuit]
@@ -22,18 +33,17 @@ module Snoopy
       @currency                = attrs[:currency] || Snoopy.default_currency
       @alicivas                = attrs[:alicivas]
       @response                = nil
-      @total_net               = attrs[:net] || 0
+      @total_net               = attrs[:total_net] || 0
       @sale_point              = attrs[:sale_point]
       @observations            = {}
-      @document_num            = attrs[:doc_num]
+      @document_num            = attrs[:document_num]
       @cbte_asoc_num           = attrs[:cbte_asoc_num] # Esto es el numero de factura para la nota de credito
       @document_type           = attrs[:document_type] || Snoopy.default_document_type
-      @issuer_iva_cond         = attrs[:own_iva_cond]
+      @issuer_iva_cond         = attrs[:issuer_iva_cond]
       @service_date_to         = attrs[:service_date_to]
       @service_date_from       = attrs[:service_date_from]
-      @receiver_iva_cond       = attrs[:iva_cond]
+      @receiver_iva_cond       = attrs[:receiver_iva_cond]
       @cbte_asoc_to_sale_point = attrs[:cbte_asoc_to_sale_point] # Esto es el punto de venta de la factura para la nota de credito
-      @exceptions              = []
     end
 
     def exchange_rate
@@ -50,12 +60,16 @@ module Snoopy
     end
 
     def iva_sum
-      @iva_sum = alicivas.collect{|aliciva| if aliciva.has_key?('amount'); aliciva['amount'].to_f; else aliciva[:amount].to_f end }.sum.to_f.round_with_precision(2)
+      @iva_sum = alicivas.collect{|aliciva| aliciva[:amount].to_f }.sum.to_f.round_with_precision(2)
     end
 
     def cbte_type
-      Snoopy::BILL_TYPE[receiver_iva_cond.to_sym] || raise(Snoopy::Exception::NullOrInvalidAttribute.new('Please choose a valid document type.'))
+      Snoopy::BILL_TYPE[receiver_iva_cond.to_sym]
     end
+
+    # def cbte_type
+    #   Snoopy::BILL_TYPE[receiver_iva_cond.to_sym] || raise(Snoopy::Exception::NullOrInvalidAttribute.new('Please choose a valid document type.'))
+    # end
 
     def client
       Savon.client( :wsdl => Snoopy.service_url,
@@ -110,10 +124,7 @@ module Snoopy
 
         unless issuer_iva_cond.to_sym == :responsable_monotributo
           _alicivas = alicivas.collect do |aliciva|
-            id = aliciva.has_key?('id') ? aliciva['id'] : aliciva[:id]
-            amount = aliciva.has_key?('amount') ? aliciva['amount'] : aliciva[:amount]
-            base_imp = aliciva.has_key?('taxeable_base') ? aliciva['taxeable_base'] : aliciva[:taxeable_base]
-            { 'Id' => Snoopy::ALIC_IVA[id], 'BaseImp' => base_imp, 'Importe' => amount }
+            { 'Id' => Snoopy::ALIC_IVA[aliciva[:id]], 'Importe' => aliciva[:amount], 'BaseImp' => aliciva[:taxeable_base] }
           end
           fecaereq["FeCAEReq"]["FeDetReq"]["FECAEDetRequest"]["Iva"] = { "AlicIva" => _alicivas }
         end
@@ -128,8 +139,8 @@ module Snoopy
 
         unless concept == "Productos"
           detail.merge!({ "FchServDesde" => service_date_from || today,
-                          "FchServHasta" => service_date_to || today,
-                          "FchVtoPago"   => due_date       || today})
+                          "FchServHasta" => service_date_to   || today,
+                          "FchVtoPago"   => due_date          || today})
         end
 
         if self.receiver_iva_cond.to_s.include?("nota_credito")
@@ -144,6 +155,7 @@ module Snoopy
     end
 
     def cae_request
+      validate!
       set_bill_number!
       build_body_request
       # @response = Timeout::timeout(5) { client.call( :fecae_solicitar, :message => body ).body }
@@ -160,32 +172,34 @@ module Snoopy
     def connection_valid?
       # result = client.call(:fe_dummy).body[:fe_dummy_response][:fe_dummy_result]
       result = client_call(:fe_dummy)[:fe_dummy_response][:fe_dummy_result]
-      @observations << "app_server: #{result[:app_server]}, db_server: #{result[:db_server]}, auth_server: #{result[:auth_server]}"
-      result[:app_server] == "OK" and result[:db_server] == "OK" and result[:auth_server] == "OK"
+      @afip_observations[:db_server]   = result[:db_server]
+      @afip_observations[:app_server]  = result[:app_server]
+      @afip_observations[:auth_server] = result[:auth_server]
+      result[:app_server] == 'OK' and result[:db_server] == 'OK' and result[:auth_server] == 'OK'
     end
 
     def parse_observations(fecae_observations)
       fecae_observations.each_value do |obs|
-        [obs].flatten.each { |ob| @observations[ob[:code]] = ob[:msg] }
+        [obs].flatten.each { |ob| @afip_observations[ob[:code]] = ob[:msg] }
       end
     rescue => e
-      @exceptions << Snoopy::Exception::ObservationParser.new(e.message, e.backtrace)
-    end
-
-    def parse_errors(fecae_errors)
-      fecae_errors.each_value do |errores|
-        [errores].flatten.each { |error| @errors[error[:code]] = error[:msg] }
-      end
-    rescue => e
-      @exceptions << Snoopy::Exception::ErrorParser.new(e.message, e.backtrace)
+      @errors << Snoopy::Exception::ObservationParser.new(e.message, e.backtrace)
     end
 
     def parse_events(fecae_events)
       fecae_events.each_value do |events|
-        [events].flatten.each { |event| @events[event[:code]] = event[:msg] }
+        [events].flatten.each { |event| @afip_events[event[:code]] = event[:msg] }
       end
     rescue => e
-      @exceptions << Snoopy::Exception::EventsParser.new(e.message, e.backtrace)
+      @errors << Snoopy::Exception::EventsParser.new(e.message, e.backtrace)
+    end
+
+    def parse_errors(fecae_errors)
+      fecae_errors.each_value do |errores|
+        [errores].flatten.each { |error| @afip_errors[error[:code]] = error[:msg] }
+      end
+    rescue => e
+      @errors << Snoopy::Exception::ErrorParser.new(e.message, e.backtrace)
     end
 
     def parse_fecae_solicitar_response
@@ -209,7 +223,7 @@ module Snoopy
         parse_errors(fecae_result[:errors])                       if fecae_result.has_key? :errors
         parse_events(fecae_result[:events])                       if fecae_result.has_key? :events
       rescue => e
-        @exceptions << Snoopy::Exception::FecaeResponseParser.new(e.message, e.backtrace)
+        @errors << Snoopy::Exception::FecaeResponseParser.new(e.message, e.backtrace)
       end
     end
 
@@ -234,11 +248,11 @@ module Snoopy
       self.parse_events(fe_comp_consultar_result[:errors]) if fe_comp_consultar_result and fe_comp_consultar_result.has_key? :errors
       self.parse_events(fe_comp_consultar_result[:events]) if fe_comp_consultar_result and fe_comp_consultar_result.has_key? :events
     rescue => e
-      @exceptions << Snoopy::Exception::FecompConsultResponseParser.new(e.message, e.backtrace)
+      @errors << Snoopy::Exception::FecompConsultResponseParser.new(e.message, e.backtrace)
     end
 
     def self.bill_request(number, attrs={})
-      bill = new(attrs)
+      bill = Snoopy::Bill.new(attrs)
       # bill.response = bill.client.call( :fe_comp_consultar,
       #                                   :message => {"Auth" => bill.generate_auth_file,
       #                                                "FeCompConsReq" => {"CbteTipo" => bill.cbte_type, "PtoVta" => bill.sale_point, "CbteNro" => number.to_s}})
@@ -249,6 +263,76 @@ module Snoopy
       bill
     rescue => e
       binding.pry
+    end
+
+    def valid?
+      validate!
+    end
+
+    private
+
+    def validate!
+      # validate_attributes_name(attrs)
+      validate_attributes_presence
+      validate_standar_values
+    end
+
+    # def validate_attributes_name attrs
+    #   attrs_not_found = attrs.keys - Snoopy::Bill::ATTRIBUTES
+    #   imp_atts_not_found = []
+
+    #   if attrs.has_key?(:alicivas)
+    #     attrs[:alicivas].each { |imp| imp_atts_not_found += imp.keys - Snoopy::Bill::TAX_ATTRIBUTES }
+    #   end
+
+    #   _attrs = attrs_not_found + imp_atts_not_found.uniq
+    #   raise Snoopy::Exception::NonExistAttributes.new(_attrs.join(', ')) if _attrs.present?
+    # end
+
+    def validate_attributes_presence
+      ATTRIBUTES_PRECENSE.each { |_attr| missing_attributes << _attr if (self.send(_attr).blank? || self.send(_attr).nil?) }
+
+      missing_tax_attributes = []
+      @alicivas.each { |imp| missing_tax_attributes += Snoopy::Bill::TAX_ATTRIBUTES - imp.keys }
+
+      _attrs = (missing_attributes + missing_tax_attributes.uniq)
+      if _attrs.present?
+        exception = Snoopy::Exception::MissingAttributes.new(_attrs.join(', '))
+        @errors << exception
+        raise exception
+      end
+    end
+
+    def validate_standar_values
+      unless Snoopy::CURRENCY.keys.include?(@currency.to_sym)
+        exception = Snoopy::Exception::InvalidValueAttribute.new(":currency. Possible values #{Snoopy::CURRENCY.keys}")
+        @errors << exception
+        raise exception
+      end
+
+      unless Snoopy::IVA_COND.include?(@issuer_iva_cond.to_sym)
+        exception = Snoopy::Exception::InvalidValueAttribute.new(":issuer_iva_cond. Possible values #{Snoopy::IVA_COND}")
+        @errors << exception
+        raise exception
+      end
+
+      unless Snoopy::BILL_TYPE.keys.include?(@receiver_iva_cond.to_sym)
+        exception = Snoopy::Exception::InvalidValueAttribute.new(":receiver_iva_cond. Possible values #{Snoopy::BILL_TYPE.keys}")
+        @errors << exception
+        raise exception
+      end
+
+      unless Snoopy::DOCUMENTS.keys.include?(@document_type)
+        exception = Snoopy::Exception::InvalidValueAttribute.new(":document_type. Possible values #{Snoopy::DOCUMENTS.keys}")
+        @errors << exception
+        raise exception
+      end
+
+      unless Snoopy::CONCEPTS.keys.include?(@concept)
+        exception = Snoopy::Exception::InvalidValueAttribute.new(":concept. Possible values #{Snoopy::CONCEPTS.keys}")
+        @errors << exception
+        raise exception
+      end
     end
   end
 end
