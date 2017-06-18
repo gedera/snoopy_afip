@@ -1,10 +1,6 @@
 # coding: utf-8
 module Snoopy
   class Bill
-    include AuthData
-
-    #attr_reader :total
-
     attr_accessor :total_net, :document_num, :document_type, :concept, :currency, :result, :issuer_iva_cond,
                   :due_date, :aliciva_id, :body, :response, :cbte_asoc_num, :cae, :service_date_to,
                   :number, :alicivas, :pkey, :cert, :cuit, :sale_point, :auth, :service_date_from,
@@ -94,10 +90,8 @@ module Snoopy
     end
 
     def set_bill_number!
-      # resp = Timeout::timeout(5) { client.call( :fe_comp_ultimo_autorizado,
-      #                                           :message => { "Auth" => generate_auth_file,   "PtoVta" => sale_point, "CbteTipo" => cbte_type })  }
       resp = client_call( :fe_comp_ultimo_autorizado,
-                          :message => { "Auth" => generate_auth_file, "PtoVta" => sale_point, "CbteTipo" => cbte_type } )
+                          :message => { "Auth" => Snoopy::AuthDate.generate_auth_file(cuit: @cuit, cert: @cert, pkey: @pkey), "PtoVta" => sale_point, "CbteTipo" => cbte_type } )
 
       begin
         resp_errors = resp[:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:errors]
@@ -149,7 +143,7 @@ module Snoopy
                                                         "Tipo"   => cbte_type }}})
         end
 
-        @body = { "Auth" => generate_auth_file }.merge!(fecaereq)
+        @body = { "Auth" => Snoopy::AuthDate.generate_auth_file(cuit: @cuit, cert: @cert, pkey: @pkey) }.merge!(fecaereq)
       rescue => e
         raise Snoopy::Exception::BuildBodyRequest.new(e.message, e.backtrace)
     end
@@ -257,7 +251,7 @@ module Snoopy
       #                                   :message => {"Auth" => bill.generate_auth_file,
       #                                                "FeCompConsReq" => {"CbteTipo" => bill.cbte_type, "PtoVta" => bill.sale_point, "CbteNro" => number.to_s}})
       bill.response = bill.client_call( :fe_comp_consultar,
-                                        :message => {"Auth" => bill.generate_auth_file,
+                                        :message => {"Auth" => Snoopy::AuthDate.generate_auth_file(cuit: bill.cuit, cert: bill.cert, pkey: bill.pkey),
                                                      "FeCompConsReq" => {"CbteTipo" => bill.cbte_type, "PtoVta" => bill.sale_point, "CbteNro" => number.to_s}})
       bill.parse_fe_comp_consultar_response
       bill

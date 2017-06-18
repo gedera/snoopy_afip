@@ -1,24 +1,18 @@
 # coding: utf-8
 module Snoopy
   module AuthData
-    def generate_auth_file
-      Snoopy::AuthData.generate_auth_file(:cuit => cuit, :pkey => pkey, :cert => cert)
-
-      todays_datafile = "/tmp/snoopy_afip_#{cuit}_#{Time.new.strftime('%d_%m_%Y')}.yml"
-      current_token_sign_file = YAML.load_file(todays_datafile)
-
-      { "Token" => current_token_sign_file["token"], "Sign" => current_token_sign_file["sign"], "Cuit" => cuit }
-    end
-
-    def self.generate_auth_file invoicing_firm
+    def self.generate_auth_file(invoicing_firm)
       raise "Debe definir el cuit del emisor"                                    unless invoicing_firm[:cuit]
       raise "Archivo certificado no encontrado en #{invoicing_firm[:cert]}"      unless File.exists?(invoicing_firm[:cert])
       raise "Archivo de llave privada no encontrado en #{invoicing_firm[:pkey]}" unless File.exists?(invoicing_firm[:pkey])
 
-      todays_datafile = "/tmp/snoopy_afip_#{invoicing_firm[:cuit]}_#{Time.new.strftime('%d_%m_%Y')}.yml"
+      todays_datafile = "/tmp/snoopy_afip_#{invoicing_firm[:cuit]}_#{Date.today.strftime('%d_%m_%Y')}.yml"
       opts = "-u #{Snoopy.auth_url} -k #{invoicing_firm[:pkey]} -c #{invoicing_firm[:cert]} -i #{invoicing_firm[:cuit]}"
 
       %x(#{File.dirname(__FILE__)}/../../wsaa-client.sh #{opts}) unless File.exists?(todays_datafile)
+      raise AuthDataError.new unless File.exists?(todays_datafile)
+      current_token_sign_file = YAML.load_file(todays_datafile)
+      { "Token" => current_token_sign_file["token"], "Sign" => current_token_sign_file["sign"], "Cuit" => invoicing_firm[:cuit] }
     end
 
     def self.generate_pkey file

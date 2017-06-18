@@ -12,6 +12,13 @@ module Snoopy
     class NullOrInvalidAttribute < StandardError
     end
 
+    class AuthDataError < Exception
+      def initialize
+        @backtrace = nil
+        super('Certificate or private key no valid', nil)
+      end
+    end
+
     class NonExistAttributes < Exception
       def initialize(attributes, backtrace=nil)
         @backtrace = backtrace
