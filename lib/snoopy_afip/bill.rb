@@ -19,9 +19,9 @@ module Snoopy
 
     def initialize(attrs={})
       # attrs = attrs.deep_symbolize_keys
+      @cuit                    = attrs[:cuit]
       @pkey                    = attrs[:pkey]
       @cert                    = attrs[:cert]
-      @cuit                    = attrs[:cuit]
       @errors                  = {}
       @events                  = {}
       @concept                 = attrs[:concept] || Snoopy.default_concept
@@ -68,15 +68,15 @@ module Snoopy
     # end
 
     def client
-      Savon.client( :wsdl => Snoopy.service_url,
+      Savon.client( :wsdl              => Snoopy.service_url,
+                    :headers           => { "Accept-Encoding" => "gzip, deflate", "Connection" => "Keep-Alive" },
+                    :namespaces        => {"xmlns" => "http://ar.gov.afip.dif.FEV1/"},
+                    :ssl_version       => :TLSv1,
+                    :read_timeout      => 90,
+                    :open_timeout      => 90,
+                    :ssl_cert_file     => cert,
                     :ssl_cert_key_file => pkey,
-                    :ssl_cert_file => cert,
-                    :ssl_version => :TLSv1,
-                    :read_timeout => 90,
-                    :open_timeout => 90,
-                    :headers => { "Accept-Encoding" => "gzip, deflate", "Connection" => "Keep-Alive" },
-                    :pretty_print_xml => true,
-                    :namespaces => {"xmlns" => "http://ar.gov.afip.dif.FEV1/"} )
+                    :pretty_print_xml  => true )
     end
 
     def client_call service, args={}
@@ -90,8 +90,10 @@ module Snoopy
     end
 
     def set_bill_number!
-      resp = client_call( :fe_comp_ultimo_autorizado,
-                          :message => { "Auth" => Snoopy::AuthDate.generate_auth_file(cuit: @cuit, cert: @cert, pkey: @pkey), "PtoVta" => sale_point, "CbteTipo" => cbte_type } )
+      message = { "Auth"     => Snoopy::AuthDate.generate_auth_file(:cuit => @cuit, :cert => @cert, :pkey => @pkey),
+                  "PtoVta"   => sale_point,
+                  "CbteTipo" => cbte_type }
+      resp = client_call( :fe_comp_ultimo_autorizado, :message =>  message )
 
       begin
         resp_errors = resp[:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:errors]
@@ -143,7 +145,7 @@ module Snoopy
                                                         "Tipo"   => cbte_type }}})
         end
 
-        @body = { "Auth" => Snoopy::AuthDate.generate_auth_file(cuit: @cuit, cert: @cert, pkey: @pkey) }.merge!(fecaereq)
+        @body = { "Auth" => Snoopy::AuthDate.generate_auth_file(:cuit => @cuit, :cert => @cert, :pkey => @pkey) }.merge!(fecaereq)
       rescue => e
         raise Snoopy::Exception::BuildBodyRequest.new(e.message, e.backtrace)
     end
@@ -251,7 +253,7 @@ module Snoopy
       #                                   :message => {"Auth" => bill.generate_auth_file,
       #                                                "FeCompConsReq" => {"CbteTipo" => bill.cbte_type, "PtoVta" => bill.sale_point, "CbteNro" => number.to_s}})
       bill.response = bill.client_call( :fe_comp_consultar,
-                                        :message => {"Auth" => Snoopy::AuthDate.generate_auth_file(cuit: bill.cuit, cert: bill.cert, pkey: bill.pkey),
+                                        :message => {"Auth" => Snoopy::AuthDate.generate_auth_file(:cuit => bill.cuit, :cert => bill.cert, :pkey => bill.pkey),
                                                      "FeCompConsReq" => {"CbteTipo" => bill.cbte_type, "PtoVta" => bill.sale_point, "CbteNro" => number.to_s}})
       bill.parse_fe_comp_consultar_response
       bill
