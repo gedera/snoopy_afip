@@ -20,6 +20,7 @@ module Snoopy
     def initialize(attrs={})
       # attrs = attrs.deep_symbolize_keys
       @cuit                    = attrs[:cuit]
+      @auth                    = attrs[:auth]
       @pkey                    = attrs[:pkey]
       @cert                    = attrs[:cert]
       @errors                  = {}
@@ -90,9 +91,7 @@ module Snoopy
     end
 
     def set_bill_number!
-      message = { "Auth"     => Snoopy::AuthDate.generate_auth_file(:cuit => @cuit, :cert => @cert, :pkey => @pkey),
-                  "PtoVta"   => sale_point,
-                  "CbteTipo" => cbte_type }
+      message = { "Auth" => auth, "PtoVta" => sale_point, "CbteTipo" => cbte_type }
       resp = client_call( :fe_comp_ultimo_autorizado, :message =>  message )
 
       begin
@@ -145,7 +144,7 @@ module Snoopy
                                                         "Tipo"   => cbte_type }}})
         end
 
-        @body = { "Auth" => Snoopy::AuthDate.generate_auth_file(:cuit => @cuit, :cert => @cert, :pkey => @pkey) }.merge!(fecaereq)
+        @body = { "Auth" => auth }.merge!(fecaereq)
       rescue => e
         raise Snoopy::Exception::BuildBodyRequest.new(e.message, e.backtrace)
     end
@@ -247,19 +246,16 @@ module Snoopy
       @errors << Snoopy::Exception::FecompConsultResponseParser.new(e.message, e.backtrace)
     end
 
-    def self.bill_request(number, attrs={})
-      bill = Snoopy::Bill.new(attrs)
-      # bill.response = bill.client.call( :fe_comp_consultar,
-      #                                   :message => {"Auth" => bill.generate_auth_file,
-      #                                                "FeCompConsReq" => {"CbteTipo" => bill.cbte_type, "PtoVta" => bill.sale_point, "CbteNro" => number.to_s}})
-      bill.response = bill.client_call( :fe_comp_consultar,
-                                        :message => {"Auth" => Snoopy::AuthDate.generate_auth_file(:cuit => bill.cuit, :cert => bill.cert, :pkey => bill.pkey),
-                                                     "FeCompConsReq" => {"CbteTipo" => bill.cbte_type, "PtoVta" => bill.sale_point, "CbteNro" => number.to_s}})
-      bill.parse_fe_comp_consultar_response
-      bill
-    rescue => e
-      binding.pry
-    end
+    # def self.bill_request(number, attrs={})
+    #   bill = Snoopy::Bill.new(attrs)
+    #   bill.response = bill.client_call( :fe_comp_consultar,
+    #                                     :message => {"Auth" => bill.auth,
+    #                                                  "FeCompConsReq" => {"CbteTipo" => bill.cbte_type, "PtoVta" => bill.sale_point, "CbteNro" => number.to_s}})
+    #   bill.parse_fe_comp_consultar_response
+    #   bill
+    # rescue => e
+    #   binding.pry
+    # end
 
     def valid?
       validate!
