@@ -35,7 +35,7 @@ module Snoopy
     rescue Timeout::Error
       raise Snoopy::Exception::AuthorizeAdapter::ServerTimeout.new
     rescue => e
-      raise Snoopy::Exception::AuthorizeAdapter::ClientError.new
+      raise Snoopy::Exception::AuthorizeAdapter::ClientError.new(e.message)
     end
 
     def authorize!

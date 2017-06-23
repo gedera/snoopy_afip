@@ -64,7 +64,7 @@ module Snoopy
       request.version = 0
       request.subject = OpenSSL::X509::Name.new(options)
       request.public_key = key.public_key
-      request.sign(key, OpenSSL::Digest::SHA256.new)
+      request.sign(key, OpenSSL::Digest::SHA256.new).to_pem
     end
 
     # pkey:      clave privada generada por el metodo generate_pkey.
