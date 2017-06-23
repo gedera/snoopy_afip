@@ -8,11 +8,10 @@ require "snoopy_afip/core_ext/float"
 require "snoopy_afip/core_ext/hash"
 require "snoopy_afip/core_ext/string"
 module Snoopy
-  autoload :Authorizer, "snoopy_afip/authorizer"
-  autoload :AuthData,   "snoopy_afip/auth_data"
-  autoload :Bill,       "snoopy_afip/bill"
-  autoload :Constants,  "snoopy_afip/constants"
-
+  autoload :Constants,             'snoopy_afip/constants'
+  autoload :Bill,                  'snoopy_afip/bill'
+  autoload :AuthorizeAdapter,      'snoopy_afip/authorize_adapter'
+  autoload :AuthenticationAdapter, 'snoopy_afip/authentication_adapter'
 
   extend self
   attr_accessor :cuit, :sale_point, :service_url, :default_document_type, :pkey, :cert, :default_concept, :default_currency, :own_iva_cond, :verbose, :auth_url

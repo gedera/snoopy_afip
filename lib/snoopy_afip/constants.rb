@@ -21,7 +21,10 @@ module Snoopy
                 '63' => 'Liquidacion A',
                 '64' => 'Liquidacion B' }
 
-  IVA_COND = [ :responsable_monotributo, :responsable_inscripto ]
+  RESPONSABLE_INSCRIPTO   = :responsable_inscripto
+  RESPONSABLE_MONOTRIBUTO = :responsable_monotributo
+
+  IVA_COND = [ RESPONSABLE_MONOTRIBUTO, RESPONSABLE_INSCRIPTO ]
 
   CONCEPTS = { 'Productos'             => '01',
                'Servicios'             => '02',
