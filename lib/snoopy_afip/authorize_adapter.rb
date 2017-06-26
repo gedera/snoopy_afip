@@ -1,60 +1,35 @@
 module Snoopy
   class AuthorizeAdapter
 
-    attr_accessor :bill, :auth, :pkey, :cert, :errors, :request, :response, :afip_errors, :afip_events, :afip_observations
+    attr_accessor :bill, :cuit, :sign, :pkey, :cert, :token, :errors, :request, :response, :afip_errors, :afip_events, :afip_observations, :client
 
     def initialize(attrs)
       @bill              = attrs[:bill]
-      @auth              = attrs[:auth]
+      @cuit              = attrs[:cuit]
+      @sign              = attrs[:sign]
       @pkey              = attrs[:pkey]
       @cert              = attrs[:cert]
+      @token             = attrs[:token]
       @errors            = {}
       @request           = nil
       @response          = nil
       @afip_errors       = {}
       @afip_events       = {}
       @afip_observations = {}
+      @client            = Snoopy::Client.new(client_configuration)
     end
 
-    def client
-      Savon.client( :wsdl              => Snoopy.service_url,
-                    :headers           => { "Accept-Encoding" => "gzip, deflate", "Connection" => "Keep-Alive" },
-                    :namespaces        => {"xmlns" => "http://ar.gov.afip.dif.FEV1/"},
-                    :ssl_version       => :TLSv1,
-                    :read_timeout      => 90,
-                    :open_timeout      => 90,
-                    :ssl_cert_file     => cert,
-                    :ssl_cert_key_file => pkey,
-                    :pretty_print_xml  => true )
-    end
-
-    def call service, args={}
-      Timeout::timeout(5) do
-        client.call(service, args).body
-      end
-    rescue Timeout::Error
-      raise Snoopy::Exception::AuthorizeAdapter::ServerTimeout.new
-    rescue => e
-      raise Snoopy::Exception::AuthorizeAdapter::ClientError.new(e.message)
+    def auth
+      { "Token" => token, "Sign" => sign, "Cuit" => cuit }
     end
 
     def authorize!
       return false unless bill.valid?
       set_bill_number!
       build_body_request
-      # @response = Timeout::timeout(5) { client.call( :fecae_solicitar, :message => body ).body }
-      @response = client_call( :fecae_solicitar, :message => body )
+      @response = client.call( :fecae_solicitar, :message => @request )
       parse_fecae_solicitar_response
       !@response.nil?
-    end
-
-    def exchange_rate
-      return 1 if currency == :peso
-      # response = client.fe_param_get_cotizacion do |soap|
-      #   soap.namespaces["xmlns"] = "http://ar.gov.afip.dif.FEV1/"
-      #   soap.body = body.merge!({"MonId" => Snoopy::CURRENCY[currency][:code]})
-      # end
-      # response.to_hash[:fe_param_get_cotizacion_response][:fe_param_get_cotizacion_result][:result_get][:mon_cotiz].to_f
     end
 
     def set_bill_number!
@@ -110,7 +85,7 @@ module Snoopy
                                                       "Tipo"   => bill.cbte_type }}})
       end
 
-      @request = { "Auth" => bill.auth }.merge!(fecaereq)
+      @request = { "Auth" => auth }.merge!(fecaereq)
     rescue => e
       raise Snoopy::Exception::AuthorizeAdapter::BuildBodyRequest.new(e.message, e.backtrace)
     end
@@ -186,6 +161,18 @@ module Snoopy
       self.parse_events(fe_comp_consultar_result[:events]) if fe_comp_consultar_result and fe_comp_consultar_result.has_key? :events
     rescue => e
       @errors << Snoopy::Exception::FecompConsultResponseParser.new(e.message, e.backtrace)
+    end
+
+    def client_configuration
+      { :wsdl              => Snoopy.service_url,
+        :headers           => { "Accept-Encoding" => "gzip, deflate", "Connection" => "Keep-Alive" },
+        :namespaces        => {"xmlns" => "http://ar.gov.afip.dif.FEV1/"},
+        :ssl_version       => :TLSv1,
+        :read_timeout      => 90,
+        :open_timeout      => 90,
+        :ssl_cert_file     => cert,
+        :ssl_cert_key_file => pkey,
+        :pretty_print_xml  => true }
     end
   end
 end

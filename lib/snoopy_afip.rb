@@ -7,9 +7,11 @@ require "savon"
 require "snoopy_afip/core_ext/float"
 require "snoopy_afip/core_ext/hash"
 require "snoopy_afip/core_ext/string"
+
 module Snoopy
   autoload :Constants,             'snoopy_afip/constants'
   autoload :Bill,                  'snoopy_afip/bill'
+  autoload :Client,                'snoopy_afip/client'
   autoload :AuthorizeAdapter,      'snoopy_afip/authorize_adapter'
   autoload :AuthenticationAdapter, 'snoopy_afip/authentication_adapter'
 

@@ -1,32 +1,41 @@
 # coding: utf-8
 module Snoopy
   class AuthenticationAdapter
-    attr_reader :id, :from, :to, :pkey, :cert, :tra, :cms, :request, :response
+    attr_reader :id, :from, :to, :pkey, :cert, :tra, :cms, :request, :response, :client
 
     def initialize(attrs={})
       time = Time.new
-      @id   = time.to_i
-      @from = time.strftime("%Y-%m-%dT%H:%M:%S%:z")
-      @to   = (time + 86400/2).strftime("%Y-%m-%dT%H:%M:%S%:z") # 86400.seg = 1.day
-      @pkey = attrs[:pkey]
-      @cert = attrs[:cert]
+      @id     = time.to_i
+      @from   = time.strftime("%Y-%m-%dT%H:%M:%S%:z")
+      @to     = (time + 86400/2).strftime("%Y-%m-%dT%H:%M:%S%:z") # 86400.seg = 1.day
+      @pkey   = attrs[:pkey]
+      @cert   = attrs[:cert]
+      @client = Snoopy::Client.new(client_configuration)
     end
 
-    def autenticate!
-      @response = call
-      parser_response
-    end
-
-    def call
-      begin
-        Timeout::timeout(5) do
-          client.call(:login_cms, :message => { :in0 => build_cms }).body
-        end
-      rescue Timeout::Error
-        raise Snoopy::Exception::AuthenticationAdapter::ServerTimeout.new
-      rescue => e
-        raise Snoopy::Exception::AuthenticationAdapter::ClientError.new(e)
-      end
+    # http://www.afip.gov.ar/ws/WSAA/Especificacion_Tecnica_WSAA_1.2.0.pdf
+    # coe.notAuthorized:          Computador no autorizado a acceder los servicio de AFIP
+    # cms.bad:                    El CMS no es valido
+    # cms.bad.base64:             No se puede decodificar el BASE64
+    # cms.cert.notFound:          No se ha encontrado certificado de firma en el CMS
+    # cms.sign.invalid:           Firma inválida o algoritmo no soportado
+    # cms.cert.expired:           Certificado expirado
+    # cms.cert.invalid:           Certificado con fecha de generación posterior a la actual
+    # cms.cert.untrusted:         Certificado no emitido por AC de confianza
+    # xml.bad:                    No se ha podido interpretar el XML contra el SCHEMA
+    # xml.source.invalid:         El atributo 'source' no se corresponde con el DN del Certificad
+    # xml.destination.invalid:    El atributo 'destination' no se corresponde con el DN del WSAA
+    # xml.version.notSupported:   La versión del documento no es soportada
+    # xml.generationTime.invalid: El tiempo de generación es posterior a la hora actual o posee más de 24 horas de antiguedad
+    # xml.expirationTime.expired: El tiempo de expiración es inferior a la hora actual
+    # xml.expirationTime.invalid: El tiempo de expiración del documento es superior a 24 horas
+    # wsn.unavailable:            El servicio al que se desea acceder se encuentra momentáneamente fuera de servicio
+    # wsn.notFound:               Servicio informado inexistente
+    # wsaa.unavailable:           El servicio de autenticación/autorización se encuentra momentáneamente fuera de servicio
+    # wsaa.internalError:         No se ha podido procesar el requerimiento
+    def authenticate!
+      @response = client.call(:login_cms, :message => { :in0 => build_cms })
+      parser_response.deep_symbolize_keys
     end
 
     def parser_response
@@ -42,12 +51,12 @@ module Snoopy
     end
 
     def response_to_hash
-      @_response_to_hash ||= Nori.new.parse(response.body[:login_cms_response][:login_cms_return])
+      @_response_to_hash ||= Nori.new.parse(response[:login_cms_response][:login_cms_return])
     end
 
-    def self.generate_pkey
+    def self.generate_pkey(leng=8192)
       begin
-        OpenSSL::PKey::RSA.new(8192).to_pem # %x(openssl genrsa 8192)
+        OpenSSL::PKey::RSA.new(leng).to_pem # %x(openssl genrsa 8192)
       rescue => e
         raise "command fail: 'openssl genrsa 8192' error al generar pkey: #{e.message}, error: #{e.message}"
       end
@@ -79,12 +88,6 @@ module Snoopy
       end
     end
 
-    def client
-      Savon.client( :wsdl             => Snoopy.auth_url,
-                    :ssl_version      => :TLSv1,
-                    :pretty_print_xml => true )
-    end
-
     def build_tra
       builder = Nokogiri::XML::Builder.new(:encoding => 'UTF-8') do |xml|
         xml.loginTicketRequest('version' => '1.0') {
@@ -104,6 +107,12 @@ module Snoopy
       crt = OpenSSL::X509::Certificate.new(File.read(cert))
       pkcs7 = OpenSSL::PKCS7::sign(crt, key, build_tra)
       @cms = pkcs7.to_pem.lines.to_a[1..-2].join
+    end
+
+    def client_configuration
+      { :wsdl             => Snoopy.auth_url,
+        :ssl_version      => :TLSv1,
+        :pretty_print_xml => true }
     end
   end
 end

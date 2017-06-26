@@ -10,24 +10,19 @@ module Snoopy
       end
     end
 
-    module AuthenticationAdapter
-      class ClientError < Exception
-        def initialize(msj)
-          super(msj, nil)
-        end
-      end
-
-      class ServerTimeout < Timeout::Error
+    class ClientError < Exception
+      def initialize(msj)
+        super(msj, nil)
       end
     end
 
-    module AuthorizeAdapter
-      class ClientError < Exception
-        def initialize(msj)
-          super(msj, nil)
-        end
-      end
+    class ServerTimeout < Timeout::Error
+    end
 
+    module AuthenticationAdapter
+    end
+
+    module AuthorizeAdapter
       class SetBillNumberParser < Exception
       end
 
@@ -50,9 +45,6 @@ module Snoopy
       end
 
       class FecompConsultResponseParser < Exception
-      end
-
-      class ServerTimeout < Timeout::Error
       end
     end
 
