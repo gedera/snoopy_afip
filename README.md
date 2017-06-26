@@ -222,6 +222,10 @@ Hay 4 nivel de parser:
 
 Implemente esto de esta manera debido a que sucedio que **AFIP** cambio algo en la estructura de los eventos, y al tener todo en un solo parser explotaba todo y no sabia que habia sucedido con la autorización de la factura.
 
+## TO DO
+- **Mejor parseo de los errores obtenidos en AFIP**: La idea seria poder identificar cada uno de los errores posibles obtenido, y agregar los errores en la `bill` al atributo que corresponda.
+- **Batch**: Permitir a `Snoopy::AuthorizeAdapter` autorizar un pool de `Snoopy::Bill` en una sola request.
+
 ## License
 
 The gem is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
