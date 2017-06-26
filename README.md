@@ -99,10 +99,11 @@ Para poder emitir o autorizar facturas en el web service de la **AFIP** es neces
 ```ruby
 # pkey_path: Ruta absoluta de la llave privada.
 # cert_path: Ruta absoluta del cetificado obtendio del sitio oficial de la **AFIP**.
-Snoopy::AuthenticationAdapter.new(pkey_path, pkey_cert)
+authentication_adapter = Snoopy::AuthenticationAdapter.new(pkey_path, pkey_cert)
+authentication_adapter.authenticate!
 ```
 
-El metodo deberá retornar un `Hash` con las siguientes keys: `:token`, `:sign` y `:expiration_time`
+`authentication_adapter.authenticate!` deberá retornar un `Hash` con las siguientes keys: `:token`, `:sign` y `:expiration_time`
 
 La key `:expiration_time` determina hasta cuando se podrá autorizar facturas, el tiempo esta prefijado por **AFIP** y es el de 24 Horas desde el momento de la solicitud del **token sign**, superado este tiempo deberá solicitarse nuevamente un **token sign**.
 
