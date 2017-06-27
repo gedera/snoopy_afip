@@ -85,7 +85,7 @@ module Snoopy
           client.call(service, args).body
         end
       rescue Timeout::Error
-        raise(Snoopy::AfipTimeout.new)
+        raise(Snoopy::Exception::Timeout.new)
       end
     end
 

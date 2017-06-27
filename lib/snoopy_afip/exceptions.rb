@@ -63,8 +63,11 @@ module Snoopy
 
     class FecaeSolicitarResultParser < Exception
     end
-  end
 
-  class AfipTimeout < Timeout::Error
+    class ClientError < Exception
+    end
+
+    class Timeout < Timeout::Error
+    end
   end
 end
