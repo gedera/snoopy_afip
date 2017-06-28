@@ -74,7 +74,7 @@ module Snoopy
     end
 
     def iva_sum
-      @iva_sum = alicivas.collect{|aliciva| aliciva[:amount].to_f }.sum.to_f.round_with_precision(2)
+      @iva_sum = alicivas.map{|aliciva| aliciva[:amount].to_f }.inject(:+).to_f.round_with_precision(2)
     end
 
     def cbte_type

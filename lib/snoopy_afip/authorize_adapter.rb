@@ -34,7 +34,7 @@ module Snoopy
 
     def set_bill_number!
       message = { "Auth" => auth, "PtoVta" => bill.sale_point, "CbteTipo" => bill.cbte_type }
-      resp = call( :fe_comp_ultimo_autorizado, :message =>  message )
+      resp = client.call( :fe_comp_ultimo_autorizado, :message =>  message )
 
       begin
         resp_errors = resp[:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:errors]
