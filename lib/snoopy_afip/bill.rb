@@ -97,6 +97,13 @@ module Snoopy
       validate!
     end
 
+    def to_h
+      Hash[*instance_variables.map { |v|
+        [v.to_s.sub('@', '').to_sym, instance_variable_get(v)]
+      }.flatten]
+    end
+    alias :to_hash :to_h
+
     private
 
     def validate!
