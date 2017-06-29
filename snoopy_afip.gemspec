@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["g.edera"]
-  s.date = "2016-09-12"
+  s.date = "2017-06-29"
   s.description = "Adaptador para Web Service de Facturación Electrónica Argentina (AFIP)"
   s.email = ["gab.edera@gmail.com"]
   s.extra_rdoc_files = ["LICENSE.txt", "README.textile"]
