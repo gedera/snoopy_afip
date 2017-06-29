@@ -17,6 +17,11 @@ O instala la gema a mano:
 
     $ gem install snoopy_afip
 
+### Versiones
+
+- `2.1.1`. Usada en producción. (**Stable**)
+- `3.0.0`. Aun en entorono de testing. (**Beta**)
+
 ## Antes que nada
 
 * Link con el manual para desarrolladores.
