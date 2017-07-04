@@ -16,7 +16,12 @@ module Snoopy
   autoload :AuthenticationAdapter, 'snoopy_afip/authentication_adapter'
 
   extend self
-  attr_accessor :cuit, :sale_point, :service_url, :default_document_type, :pkey, :cert, :default_concept, :default_currency, :own_iva_cond, :verbose, :auth_url
+  attr_accessor :cuit, :sale_point, :service_url, :default_document_type, :pkey, :cert,
+    :default_concept, :default_currency, :own_iva_cond, :verbose, :auth_url,
+    :open_timeout, :read_timeout
+
+  self.open_timeout ||= 30
+  self.read_timeout ||= 30
 
   def auth_hash
     {"Token" => Snoopy::TOKEN, "Sign"  => Snoopy::SIGN, "Cuit"  => Snoopy.cuit}

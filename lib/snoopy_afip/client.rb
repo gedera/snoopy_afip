@@ -7,7 +7,7 @@ module Snoopy
     end
 
     def call service, args={}
-      Timeout::timeout(5) do
+      Timeout::timeout(Snoopy.open_timeout) do
         savon.call(service, args).body
       end
     rescue Timeout::Error
