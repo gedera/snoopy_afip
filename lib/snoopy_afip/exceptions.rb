@@ -20,6 +20,8 @@ module Snoopy
     end
 
     module AuthenticationAdapter
+      class CmsBuilder < Exception
+      end
     end
 
     module AuthorizeAdapter

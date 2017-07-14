@@ -107,6 +107,8 @@ module Snoopy
       crt = OpenSSL::X509::Certificate.new(File.read(cert))
       pkcs7 = OpenSSL::PKCS7::sign(crt, key, build_tra)
       @cms = pkcs7.to_pem.lines.to_a[1..-2].join
+    rescue => e
+      raise Snoopy::Exception::AuthenticationAdapter::CmsBuilder.new(e)
     end
 
     def client_configuration
