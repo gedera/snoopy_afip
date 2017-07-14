@@ -108,7 +108,7 @@ module Snoopy
       pkcs7 = OpenSSL::PKCS7::sign(crt, key, build_tra)
       @cms = pkcs7.to_pem.lines.to_a[1..-2].join
     rescue => e
-      raise Snoopy::Exception::AuthenticationAdapter::CmsBuilder.new(e)
+      raise Snoopy::Exception::AuthenticationAdapter::CmsBuilder.new(e.message, e.backtrace)
     end
 
     def client_configuration
