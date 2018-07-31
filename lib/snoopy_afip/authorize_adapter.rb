@@ -60,7 +60,7 @@ module Snoopy
 
       unless bill.issuer_iva_cond.to_sym == Snoopy::RESPONSABLE_MONOTRIBUTO
         _alicivas = bill.alicivas.collect do |aliciva|
-          { 'Id' => Snoopy::ALIC_IVA[aliciva[:id]], 'Importe' => aliciva[:amount], 'BaseImp' => aliciva[:taxeable_base] }
+          { 'Id' => Snoopy::ALIC_IVA[aliciva[:id].to_f], 'Importe' => aliciva[:amount], 'BaseImp' => aliciva[:taxeable_base] }
         end
         fecaereq["FeCAEReq"]["FeDetReq"]["FECAEDetRequest"]["Iva"] = { "AlicIva" => _alicivas }
       end
