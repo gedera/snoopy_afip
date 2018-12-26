@@ -1,21 +1,17 @@
 # coding: utf-8
 module Snoopy
   class Bill
-    attr_accessor :total_net, :document_num, :document_type, :concept, :currency, :result,
-                  :cbte_asoc_num, :cae, :service_date_to, :due_date,
-                  :number, :alicivas, :cuit, :sale_point, :service_date_from,
-                  :due_date_cae, :voucher_date, :process_date, :imp_iva, :cbte_asoc_sale_point,
-                  :receiver_iva_cond, :issuer_iva_cond, :errors
-
     ATTRIBUTES = [ :total_net, :document_num, :document_type, :concept, :currency, :result,
                    :cbte_asoc_num, :cae, :service_date_to, :due_date,
                    :number, :alicivas, :cuit, :sale_point, :service_date_from,
-                   :due_date_cae, :voucher_date, :process_date, :imp_iva, :cbte_asoc_sale_point,
+                   :due_date_cae, :voucher_date, :process_date, :imp_iva, :cbte_asoc_to_sale_point,
                    :receiver_iva_cond, :issuer_iva_cond, :errors ]
 
     TAX_ATTRIBUTES = [ :id, :amount, :taxeable_base ]
 
     ATTRIBUTES_PRECENSE = [:total_net, :concept, :receiver_iva_cond, :alicivas, :document_type, :service_date_from, :service_date_to, :sale_point, :issuer_iva_cond]
+
+    attr_accessor *ATTRIBUTES
 
     def initialize(attrs={})
       # attrs = attrs.deep_symbolize_keys
