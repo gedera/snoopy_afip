@@ -54,10 +54,5 @@ module Snoopy
 
 #  Savon::Request.log = false unless (Snoopy.verbose == "true") || (ENV["VERBOSE"] == true)
 
-#  Savon.configure do |config|
-#    config.log = Snoopy.log?
-#    config.log_level = :debug
-#  end
-
 end
 
