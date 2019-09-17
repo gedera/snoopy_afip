@@ -25,9 +25,14 @@ module Snoopy
 
     def authorize!
       return false unless bill.valid?
-      set_bill_number!
-      build_body_request
-      @response = client.call( :fecae_solicitar, :message => @request )
+
+      if bill.number.nil? || bill.number.empty?
+        set_bill_number!
+        build_body_request
+        @response = client.call(:fecae_solicitar, :message => @request)
+      else
+        # Aca va el metodo del pablo.
+      end
       parse_fecae_solicitar_response
       !@response.nil?
     end
@@ -40,6 +45,7 @@ module Snoopy
         resp_errors = resp[:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:errors]
         resp_errors.each_value { |value| errors[value[:code]] = value[:msg] } unless resp_errors.nil?
         bill.number = resp[:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:cbte_nro].to_i + 1 if errors.empty?
+        bill.number
       rescue => e
         raise Snoopy::Exception::AuthorizeAdapter::SetBillNumberParser.new(e.message, e.backtrace)
       end
