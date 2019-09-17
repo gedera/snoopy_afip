@@ -30,10 +30,10 @@ module Snoopy
         set_bill_number!
         build_body_request
         @response = client.call(:fecae_solicitar, :message => @request)
+        parse_fecae_solicitar_response
       else
         # Aca va el metodo del pablo.
       end
-      parse_fecae_solicitar_response
       !@response.nil?
     end
 
