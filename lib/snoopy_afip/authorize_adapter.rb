@@ -26,14 +26,19 @@ module Snoopy
     def authorize!
       return false unless bill.valid?
 
+      byebug
+
       if bill.number.nil? || bill.number.empty?
         set_bill_number!
         build_body_request
         @response = client.call(:fecae_solicitar, :message => @request)
         parse_fecae_solicitar_response
       else
-        # Aca va el metodo del pablo.
+        build_body_comp_cons_request
+        @response = client.call(:fe_comp_consultar, :message => @comp_cons_request)
+        parse_fe_comp_consultar_response
       end
+
       !@response.nil?
     end
 
@@ -94,6 +99,11 @@ module Snoopy
       @request = { "Auth" => auth }.merge!(fecaereq)
     rescue => e
       raise Snoopy::Exception::AuthorizeAdapter::BuildBodyRequest.new(e.message, e.backtrace)
+    end
+
+    def build_body_comp_cons_request
+      fecompconsreq = { "FeCompConsReq" => { "CbteTipo" => bill.cbte_type, "CbteNro" => bill.number.to_i, "PtoVta" => bill.sale_point.to_i } }
+      @comp_cons_request = { "Auth" => auth }.merge!(fecompconsreq)
     end
 
     def parse_observations(fecae_observations)
