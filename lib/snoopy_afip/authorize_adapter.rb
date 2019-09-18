@@ -35,18 +35,11 @@ module Snoopy
 
     def authorize!
       return false unless bill.valid?
+      @afip_errors = {}
 
-      build_body_comp_cons_request
-      @response = client.call(:fe_comp_consultar, :message => @comp_cons_request)
-      parse_fe_comp_consultar_response
-
-      if bill.number.nil? || afip_errors.keys.include?('602') # No esta informado ese numero
-        @afip_errors = {}
-        set_bill_number!
-        build_body_request
-        @response = client.call(:fecae_solicitar, :message => @request)
-        parse_fecae_solicitar_response
-      end
+      build_body_request
+      @response = client.call(:fecae_solicitar, :message => @request)
+      parse_fecae_solicitar_response
 
       !@response.nil?
     end
