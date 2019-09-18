@@ -30,7 +30,7 @@ module Snoopy
       @response = client.call(:fe_comp_consultar, :message => @comp_cons_request)
       parse_fe_comp_consultar_response
 
-      !afip_errors.keys.include?('602')
+      !afip_errors.keys.present?
     end
 
     def authorize!
