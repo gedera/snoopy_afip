@@ -162,16 +162,16 @@ module Snoopy
       result_get               = fe_comp_consultar_result[:result_get]
 
       unless result_get.nil?
-        bill.result            = result_get[:resultado]
-        bill.number            = result_get[:cbte_desde]
-        bill.cae               = result_get[:cod_autorizacion]
-        bill.due_date_cae      = result_get[:fch_vto]
-        bill.imp_iva           = result_get[:imp_iva]
-        bill.document_num      = result_get[:doc_numero]
-        bill.process_date      = result_get[:fch_proceso]
-        bill.voucher_date      = result_get[:cbte_fch]
-        bill.service_date_to   = result_get[:fch_serv_hasta]
-        bill.service_date_from = result_get[:fch_serv_desde]
+        # bill.result            = result_get[:resultado]
+        # bill.number            = result_get[:cbte_desde]
+        # bill.cae               = result_get[:cod_autorizacion]
+        # bill.due_date_cae      = result_get[:fch_vto]
+        # bill.imp_iva           = result_get[:imp_iva]
+        # bill.document_num      = result_get[:doc_numero]
+        # bill.process_date      = result_get[:fch_proceso]
+        # bill.voucher_date      = result_get[:cbte_fch]
+        # bill.service_date_to   = result_get[:fch_serv_hasta]
+        # bill.service_date_from = result_get[:fch_serv_desde]
         parse_events(result_get[:observaciones]) if result_get.has_key? :observaciones
       end
 
