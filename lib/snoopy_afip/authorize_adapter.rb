@@ -84,7 +84,7 @@ module Snoopy
       detail["ImpNeto"]   = bill.total_net.to_f
       detail["ImpIVA"]    = bill.iva_sum
       detail["ImpTotal"]  = bill.total
-      detail["CbteDesde"] = detail["CbteHasta"] = bill.number
+      detail["CbteDesde"] = detail["CbteHasta"] = bill.number.to_s
 
       unless bill.concept == "Productos"
         detail.merge!({ "FchServDesde" => bill.service_date_from || today,
