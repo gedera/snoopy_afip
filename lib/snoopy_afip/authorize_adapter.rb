@@ -182,7 +182,7 @@ module Snoopy
         parse_events(result_get[:observaciones]) if result_get.has_key? :observaciones
       end
 
-      self.parse_events(fe_comp_consultar_result[:errors]) if fe_comp_consultar_result and fe_comp_consultar_result.has_key? :errors
+      self.parse_errors(fe_comp_consultar_result[:errors]) if fe_comp_consultar_result and fe_comp_consultar_result.has_key? :errors
       self.parse_events(fe_comp_consultar_result[:events]) if fe_comp_consultar_result and fe_comp_consultar_result.has_key? :events
     rescue => e
       @errors << Snoopy::Exception::FecompConsultResponseParser.new(e.message, e.backtrace)
