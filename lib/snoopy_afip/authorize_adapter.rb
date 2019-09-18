@@ -23,12 +23,24 @@ module Snoopy
       { "Token" => token, "Sign" => sign, "Cuit" => cuit }
     end
 
+    def invoice_informed?
+      return false unless bill.valid?
+
+      build_body_comp_cons_request
+      @response = client.call(:fe_comp_consultar, :message => @comp_cons_request)
+      parse_fe_comp_consultar_response
+
+      afip_errors.keys.empty?
+    end
+
     def authorize!
       return false unless bill.valid?
-      set_bill_number!
+      @afip_errors = {}
+
       build_body_request
-      @response = client.call( :fecae_solicitar, :message => @request )
+      @response = client.call(:fecae_solicitar, :message => @request)
       parse_fecae_solicitar_response
+
       !@response.nil?
     end
 
@@ -39,7 +51,8 @@ module Snoopy
       begin
         resp_errors = resp[:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:errors]
         resp_errors.each_value { |value| errors[value[:code]] = value[:msg] } unless resp_errors.nil?
-        bill.number = resp[:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:cbte_nro].to_i + 1 if errors.empty?
+        bill.number = (resp[:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:cbte_nro].to_i + 1).to_s if errors.empty?
+        bill.number
       rescue => e
         raise Snoopy::Exception::AuthorizeAdapter::SetBillNumberParser.new(e.message, e.backtrace)
       end
@@ -71,7 +84,7 @@ module Snoopy
       detail["ImpNeto"]   = bill.total_net.to_f
       detail["ImpIVA"]    = bill.iva_sum
       detail["ImpTotal"]  = bill.total
-      detail["CbteDesde"] = detail["CbteHasta"] = bill.number
+      detail["CbteDesde"] = detail["CbteHasta"] = bill.number.to_s
 
       unless bill.concept == "Productos"
         detail.merge!({ "FchServDesde" => bill.service_date_from || today,
@@ -88,6 +101,11 @@ module Snoopy
       @request = { "Auth" => auth }.merge!(fecaereq)
     rescue => e
       raise Snoopy::Exception::AuthorizeAdapter::BuildBodyRequest.new(e.message, e.backtrace)
+    end
+
+    def build_body_comp_cons_request
+      fecompconsreq = { "FeCompConsReq" => { "CbteTipo" => bill.cbte_type, "CbteNro" => bill.number.to_i, "PtoVta" => bill.sale_point.to_i } }
+      @comp_cons_request = { "Auth" => auth }.merge!(fecompconsreq)
     end
 
     def parse_observations(fecae_observations)
@@ -144,20 +162,20 @@ module Snoopy
       result_get               = fe_comp_consultar_result[:result_get]
 
       unless result_get.nil?
-        bill.result            = result_get[:resultado]
-        bill.number            = result_get[:cbte_desde]
-        bill.cae               = result_get[:cod_autorizacion]
-        bill.due_date_cae      = result_get[:fch_vto]
-        bill.imp_iva           = result_get[:imp_iva]
-        bill.document_num      = result_get[:doc_numero]
-        bill.process_date      = result_get[:fch_proceso]
-        bill.voucher_date      = result_get[:cbte_fch]
-        bill.service_date_to   = result_get[:fch_serv_hasta]
-        bill.service_date_from = result_get[:fch_serv_desde]
+        # bill.result            = result_get[:resultado]
+        # bill.number            = result_get[:cbte_desde]
+        # bill.cae               = result_get[:cod_autorizacion]
+        # bill.due_date_cae      = result_get[:fch_vto]
+        # bill.imp_iva           = result_get[:imp_iva]
+        # bill.document_num      = result_get[:doc_numero]
+        # bill.process_date      = result_get[:fch_proceso]
+        # bill.voucher_date      = result_get[:cbte_fch]
+        # bill.service_date_to   = result_get[:fch_serv_hasta]
+        # bill.service_date_from = result_get[:fch_serv_desde]
         parse_events(result_get[:observaciones]) if result_get.has_key? :observaciones
       end
 
-      self.parse_events(fe_comp_consultar_result[:errors]) if fe_comp_consultar_result and fe_comp_consultar_result.has_key? :errors
+      self.parse_errors(fe_comp_consultar_result[:errors]) if fe_comp_consultar_result and fe_comp_consultar_result.has_key? :errors
       self.parse_events(fe_comp_consultar_result[:events]) if fe_comp_consultar_result and fe_comp_consultar_result.has_key? :events
     rescue => e
       @errors << Snoopy::Exception::FecompConsultResponseParser.new(e.message, e.backtrace)
