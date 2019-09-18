@@ -23,20 +23,29 @@ module Snoopy
       { "Token" => token, "Sign" => sign, "Cuit" => cuit }
     end
 
+    def invoice_informed?
+      return false unless bill.valid?
+
+      build_body_comp_cons_request
+      @response = client.call(:fe_comp_consultar, :message => @comp_cons_request)
+      parse_fe_comp_consultar_response
+
+      !afip_errors.keys.include?('602')
+    end
+
     def authorize!
       return false unless bill.valid?
 
-      byebug
+      build_body_comp_cons_request
+      @response = client.call(:fe_comp_consultar, :message => @comp_cons_request)
+      parse_fe_comp_consultar_response
 
-      if bill.number.nil? || bill.number.empty?
+      if bill.number.nil? || afip_errors.keys.include?('602') # No esta informado ese numero
+        @afip_errors = {}
         set_bill_number!
         build_body_request
         @response = client.call(:fecae_solicitar, :message => @request)
         parse_fecae_solicitar_response
-      else
-        build_body_comp_cons_request
-        @response = client.call(:fe_comp_consultar, :message => @comp_cons_request)
-        parse_fe_comp_consultar_response
       end
 
       !@response.nil?
