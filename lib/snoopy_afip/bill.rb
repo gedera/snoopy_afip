@@ -17,7 +17,7 @@ module Snoopy
       # attrs = attrs.deep_symbolize_keys
       @cuit                    = attrs[:cuit]
       @result                  = nil
-      @number                  = nil
+      @number                  = attrs[:number]
       @errors                  = {}
       @concept                 = attrs[:concept] || Snoopy.default_concept
       @imp_iva                 = attrs[:imp_iva] # Monto total de impuestos
