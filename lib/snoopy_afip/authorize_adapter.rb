@@ -51,7 +51,7 @@ module Snoopy
       begin
         resp_errors = resp[:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:errors]
         resp_errors.each_value { |value| errors[value[:code]] = value[:msg] } unless resp_errors.nil?
-        bill.number = resp[:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:cbte_nro].to_i + 1 if errors.empty?
+        bill.number = (resp[:fe_comp_ultimo_autorizado_response][:fe_comp_ultimo_autorizado_result][:cbte_nro].to_i + 1).to_s if errors.empty?
         bill.number
       rescue => e
         raise Snoopy::Exception::AuthorizeAdapter::SetBillNumberParser.new(e.message, e.backtrace)
