@@ -198,6 +198,8 @@ authorize_adapter = Snoopy::AuthorizeAdapter.new({ bill: bill,        # Obtenido
                                                    sign: sign,        # SIGN obtenido en la autenticación
                                                    token: token})     # TOKEN obtenido en la autenticación
                                                    
+authorize_adapter.set_bill_number!
+
 authorize_adapter.authorize!
 ```
 
