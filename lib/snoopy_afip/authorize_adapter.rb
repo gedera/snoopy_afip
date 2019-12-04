@@ -95,7 +95,7 @@ module Snoopy
       if bill.receiver_iva_cond.to_s.include?("nota_credito")
         detail.merge!({"CbtesAsoc" => {"CbteAsoc" => {"Nro"    => bill.cbte_asoc_num,
                                                       "PtoVta" => bill.cbte_asoc_to_sale_point,
-                                                      "Tipo"   => bill.cbte_type }}})
+                                                      "Tipo"   => bill.cbte_asoc_type }}})
       end
 
       @request = { "Auth" => auth }.merge!(fecaereq)
