@@ -9,7 +9,7 @@ module Snoopy
 
     TAX_ATTRIBUTES = [ :id, :amount, :taxeable_base ]
 
-    ATTRIBUTES_PRECENSE = [:total_net, :concept, :receiver_iva_cond, :alicivas, :document_type, :service_date_from, :service_date_to, :sale_point, :issuer_iva_cond]
+    ATTRIBUTES_PRECENSE = [:total_net, :concept, :receiver_iva_cond, :alicivas, :document_type, :service_date_from, :service_date_to, :sale_point, :issuer_iva_cond, :asoc_receiver_iva_cond]
 
     attr_accessor *ATTRIBUTES
 
@@ -32,6 +32,7 @@ module Snoopy
       @service_date_to         = attrs[:service_date_to]
       @service_date_from       = attrs[:service_date_from]
       @receiver_iva_cond       = attrs[:receiver_iva_cond]
+      @asoc_receiver_iva_cond  = attrs[:asoc_receiver_iva_cond]
       @cbte_asoc_to_sale_point = attrs[:cbte_asoc_to_sale_point] # Esto es el punto de venta de la factura para la nota de credito
     end
 
@@ -75,6 +76,10 @@ module Snoopy
 
     def cbte_type
       Snoopy::BILL_TYPE[receiver_iva_cond.to_sym]
+    end
+
+    def cbte_asoc_type
+      Snoopy::BILL_TYPE[asoc_receiver_iva_cond.to_sym]
     end
 
     def approved?
