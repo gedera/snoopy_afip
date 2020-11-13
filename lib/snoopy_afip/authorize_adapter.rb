@@ -185,7 +185,7 @@ module Snoopy
       { :wsdl              => Snoopy.service_url,
         :headers           => { "Accept-Encoding" => "gzip, deflate", "Connection" => "Keep-Alive" },
         :namespaces        => {"xmlns" => "http://ar.gov.afip.dif.FEV1/"},
-        :ssl_version       => :TLSv1,
+        :ssl_version       => ::Snoopy::SNOOPY_SSL_VERSION,
         :read_timeout      => Snoopy.read_timeout,
         :open_timeout      => Snoopy.open_timeout,
         :ssl_cert_file     => cert,

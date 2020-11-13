@@ -1,4 +1,3 @@
-# encoding: utf-8
 module Snoopy
   CBTE_TYPE = { '01' => 'Factura A',
                 '02' => 'Nota de Débito A',
@@ -20,6 +19,9 @@ module Snoopy
                 '61' => 'Cta de Vta y Liquido prod. B',
                 '63' => 'Liquidacion A',
                 '64' => 'Liquidacion B' }
+
+  # [:TLSv1_2, :TLSv1_1, :TLSv1, :SSLv3, :SSLv23, :SSLv2]
+  SNOOPY_SSL_VERSION = (ENV['SNOOPY_SSL_VERSION'] || 'TLSv1').to_sym
 
   RESPONSABLE_INSCRIPTO   = :responsable_inscripto
   RESPONSABLE_MONOTRIBUTO = :responsable_monotributo

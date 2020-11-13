@@ -113,7 +113,7 @@ module Snoopy
 
     def client_configuration
       { :wsdl             => Snoopy.auth_url,
-        :ssl_version      => :TLSv1,
+        :ssl_version      => ::Snoopy::SNOOPY_SSL_VERSION,
         :pretty_print_xml => true }
     end
   end
