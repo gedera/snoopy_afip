@@ -62,7 +62,7 @@ module Snoopy
       Savon.client( :wsdl => Snoopy.service_url,
                     :ssl_cert_key_file => pkey,
                     :ssl_cert_file => cert,
-                    :ssl_version => :TLSv1,
+                    :ssl_version => :TLSv1_2,
                     :read_timeout => 90,
                     :open_timeout => 90,
                     :headers => { "Accept-Encoding" => "gzip, deflate", "Connection" => "Keep-Alive" },
