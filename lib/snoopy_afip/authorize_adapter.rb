@@ -62,14 +62,15 @@ module Snoopy
       # today = Time.new.in_time_zone('Buenos Aires').strftime('%Y%m%d')
       today = Date.today.strftime('%Y%m%d')
       fecaereq = {"FeCAEReq" => { "FeCabReq" => { "CantReg" => "1", "CbteTipo" => bill.cbte_type, "PtoVta" => bill.sale_point },
-                                  "FeDetReq" => { "FECAEDetRequest" => { "Concepto"   => Snoopy::CONCEPTS[bill.concept],
-                                                                         "DocTipo"    => Snoopy::DOCUMENTS[bill.document_type],
-                                                                         "CbteFch"    => today,
-                                                                         "ImpTotConc" => 0.00,
-                                                                         "MonId"      => Snoopy::CURRENCY[bill.currency][:code],
-                                                                         "MonCotiz"   => bill.exchange_rate,
-                                                                         "ImpOpEx"    => 0.00,
-                                                                         "ImpTrib"    => 0.00 }}}}
+                                  "FeDetReq" => { "FECAEDetRequest" => { "Concepto"               => Snoopy::CONCEPTS[bill.concept],
+                                                                         "DocTipo"                => Snoopy::DOCUMENTS[bill.document_type],
+                                                                         "CbteFch"                => today,
+                                                                         "ImpTotConc"             => 0.00,
+                                                                         "MonId"                  => Snoopy::CURRENCY[bill.currency][:code],
+                                                                         "MonCotiz"               => bill.exchange_rate,
+                                                                         "ImpOpEx"                => 0.00,
+                                                                         "ImpTrib"                => 0.00,
+                                                                         "CondicionIVAReceptorId" => bill.receiver_iva_condition_id }}}}
 
       unless bill.issuer_iva_cond.to_sym == Snoopy::RESPONSABLE_MONOTRIBUTO
         _alicivas = bill.alicivas.collect do |aliciva|
