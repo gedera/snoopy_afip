@@ -9,8 +9,7 @@ module Snoopy
 
     TAX_ATTRIBUTES = [:id, :amount, :taxeable_base]
 
-    ATTRIBUTES_PRECENSE = [:total_net, :concept, :receiver_iva_cond, :alicivas, :document_type, :service_date_from, :service_date_to, :sale_point, :issuer_iva_cond]
-    # ATTRIBUTES_PRECENSE = [:total_net, :concept, :receiver_iva_cond, :alicivas, :document_type, :service_date_from, :service_date_to, :sale_point, :issuer_iva_cond, :receiver_iva_condition]
+    ATTRIBUTES_PRECENSE = [:total_net, :concept, :receiver_iva_cond, :alicivas, :document_type, :service_date_from, :service_date_to, :sale_point, :issuer_iva_cond, :receiver_iva_condition]
 
     attr_accessor *ATTRIBUTES
 
@@ -108,7 +107,9 @@ module Snoopy
     alias :to_hash :to_h
 
     def receiver_iva_condition_id
-      Snoopy::IVA_COND_RECEIVER[@receiver_iva_condition.to_sym]# || '5'
+      return '' if @receiver_iva_condition.nil?
+
+      Snoopy::IVA_COND_RECEIVER[@receiver_iva_condition.to_sym]
     end
 
     private
@@ -153,7 +154,7 @@ module Snoopy
         status = false unless errors.empty?
       end
 
-      unless Snoopy::IVA_COND_RECEIVER.keys.include?(@receiver_iva_condition.to_sym)
+      unless Snoopy::IVA_COND_RECEIVER.keys.include?(@receiver_iva_condition&.to_sym)
         @errors[:receiver_iva_condition] = [] unless errors.has_key?(:receiver_iva_condition)
         @errors[:receiver_iva_condition] << Snoopy::Exception::Bill::InvalidValueAttribute.new("Invalid value #{@receiver_iva_condition}. Possible values #{Snoopy::IVA_COND_RECEIVER.keys}").message
         status = false unless errors.empty?
