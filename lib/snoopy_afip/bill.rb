@@ -5,11 +5,11 @@ module Snoopy
                   :cbte_asoc_num, :cae, :service_date_to, :due_date,
                   :number, :alicivas, :cuit, :sale_point, :service_date_from,
                   :due_date_cae, :voucher_date, :process_date, :imp_iva, :cbte_asoc_to_sale_point,
-                  :receiver_iva_cond, :issuer_iva_cond, :errors, :asoc_receiver_iva_cond]
+                  :receiver_iva_cond, :issuer_iva_cond, :errors, :asoc_receiver_iva_cond, :receiver_iva_condition]
 
     TAX_ATTRIBUTES = [:id, :amount, :taxeable_base]
 
-    ATTRIBUTES_PRECENSE = [:total_net, :concept, :receiver_iva_cond, :alicivas, :document_type, :service_date_from, :service_date_to, :sale_point, :issuer_iva_cond]
+    ATTRIBUTES_PRECENSE = [:total_net, :concept, :receiver_iva_cond, :alicivas, :document_type, :service_date_from, :service_date_to, :sale_point, :issuer_iva_cond, :receiver_iva_condition]
 
     attr_accessor *ATTRIBUTES
 
@@ -31,9 +31,10 @@ module Snoopy
       @issuer_iva_cond         = attrs[:issuer_iva_cond]
       @service_date_to         = attrs[:service_date_to]
       @service_date_from       = attrs[:service_date_from]
-      @receiver_iva_cond       = attrs[:receiver_iva_cond]
+      @receiver_iva_cond       = attrs[:receiver_iva_cond] # Esto se usa para el cbte_type
       @asoc_receiver_iva_cond  = attrs[:asoc_receiver_iva_cond]
       @cbte_asoc_to_sale_point = attrs[:cbte_asoc_to_sale_point] # Esto es el punto de venta de la factura para la nota de credito
+      @receiver_iva_condition  = attrs[:receiver_iva_condition] # La verdadera condicion de iva del receptor
     end
 
     # def self.bill_request(number, attrs={})
@@ -105,6 +106,12 @@ module Snoopy
     end
     alias :to_hash :to_h
 
+    def receiver_iva_condition_id
+      return '' if @receiver_iva_condition.nil?
+
+      Snoopy::IVA_COND_RECEIVER[@receiver_iva_condition.to_sym]
+    end
+
     private
 
     def validate!
@@ -144,6 +151,12 @@ module Snoopy
       unless Snoopy::BILL_TYPE.keys.include?(@receiver_iva_cond.to_sym)
         @errors[:receiver_iva_cond] = [] unless errors.has_key?(:receiver_iva_cond)
         @errors[:receiver_iva_cond] << Snoopy::Exception::Bill::InvalidValueAttribute.new("Invalid value #{@receiver_iva_cond}. Possible values #{Snoopy::BILL_TYPE.keys}").message
+        status = false unless errors.empty?
+      end
+
+      unless Snoopy::IVA_COND_RECEIVER.keys.include?(@receiver_iva_condition&.to_sym)
+        @errors[:receiver_iva_condition] = [] unless errors.has_key?(:receiver_iva_condition)
+        @errors[:receiver_iva_condition] << Snoopy::Exception::Bill::InvalidValueAttribute.new("Invalid value #{@receiver_iva_condition}. Possible values #{Snoopy::IVA_COND_RECEIVER.keys}").message
         status = false unless errors.empty?
       end
 

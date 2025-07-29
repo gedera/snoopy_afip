@@ -25,8 +25,21 @@ module Snoopy
 
   RESPONSABLE_INSCRIPTO   = :responsable_inscripto
   RESPONSABLE_MONOTRIBUTO = :responsable_monotributo
+  CONSUMIDOR_FINAL        = :consumidor_final
+  IVA_SUJETO_EXENTO       = :sujeto_exento
+  IVA_NO_ALCANZADO        = :no_alcanzado
 
+  # Issuer
   IVA_COND = [ RESPONSABLE_MONOTRIBUTO, RESPONSABLE_INSCRIPTO ]
+
+  # Receiver
+  IVA_COND_RECEIVER = {
+    RESPONSABLE_INSCRIPTO   => '1', # registered_vat_payer
+    RESPONSABLE_MONOTRIBUTO => '6', # self_employed_taxpayer
+    CONSUMIDOR_FINAL        => '5', # final_consumer
+    IVA_SUJETO_EXENTO       => '4', # exempt
+    IVA_NO_ALCANZADO        => '15' # not_applicable
+  }.freeze
 
   CONCEPTS = { 'Productos'             => '01',
                'Servicios'             => '02',
