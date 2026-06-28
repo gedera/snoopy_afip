@@ -71,3 +71,26 @@ Derivada de `lib/` (módulo `Snoopy`, autoloads en `lib/snoopy_afip.rb`):
 - **`lib/snoopy_afip/core_ext/`**: extensiones a `String`, `Hash` y `Float`.
 
 El acoplamiento de las capas de parseo es deliberado (ver README §"No Explota"): un cambio de formato de AFIP en una capa no debe tumbar el parseo de las demás.
+
+## Mapa de conocimiento (cómo leer la doc de este repo)
+
+- **Tu conocimiento = la UNIÓN de este repo + sus asociados.** No termina en el `docs/<capa>/` local: incluye la doc de los servicios/gemas de `skills.yml`. Un flujo o pregunta que cruza repos no vive como doc estática en ninguno — se compone on-demand recorriendo el grafo: seguí las anclas (`docs/consumed/`, `**Canónico:**`) hasta los repos asociados y unificá.
+- **Entrá por** [`skill/SKILL.md`](skill/SKILL.md) — índice de agente; resume el contrato y linkea el detalle.
+- **Detalle por capa** (`docs/<capa>/`), cobertura declarada:
+
+  | capa | estado |
+  |---|---|
+  | `docs/interface/` (RFC-004) | presente |
+  | `docs/topology/` (RFC-006) | presente |
+  | `docs/consumed/` (RFC-018) | presente — AFIP WSAA + WSFE |
+  | `docs/errors/` (RFC-020) | presente |
+  | `docs/config/` (RFC-012) | presente |
+  | `docs/test/` (RFC-013) | presente |
+  | `docs/glossary/` (RFC-009) | presente |
+  | `docs/behavior/` (RFC-007) | presente |
+  | `docs/api/` (RFC-003) | **n/a** — gema SOAP, sin superficie HTTP/CLI/eventos propia |
+  | `docs/data/` (RFC-002) | **n/a** — sin base de datos |
+  | `docs/events/` (RFC-005) · multi-tenancy (RFC-023) | **n/a** — sin pub/sub ni tenant |
+
+- **Qué consumimos:** [`docs/consumed/afip.md`](docs/consumed/afip.md) (RFC-018) — servicios SOAP externos de AFIP.
+- **Navegar una ancla cross-repo:** tomá la key de servicio en `skills.yml` (`services.<dep>.repo`) → ese repo es un checkout hermano local o alcanzable por GitHub MCP. La doc de los asociados ES parte de tu conocimiento accesible. (Hoy las dependencias de esta gema son externas a AFIP, no del fleet.)
