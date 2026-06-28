@@ -1,7 +1,16 @@
 module Snoopy
   module Exception
 
+    # Paraguas de todos los errores que emite la gema. Se incluye en la base
+    # `Exception` (y por herencia en todas sus subclases) y en `ServerTimeout`,
+    # que debe seguir siendo un `Timeout::Error` por compatibilidad hacia atrás.
+    # Permite `rescue Snoopy::Exception::Error` para atrapar cualquier error de
+    # la gema, incluido el timeout, sin romper `rescue Timeout::Error`.
+    module Error; end
+
     class  Exception < ::StandardError
+      include Error
+
       attr_accessor :backtrace
 
       def initialize(msg, backtrace)
@@ -17,6 +26,7 @@ module Snoopy
     end
 
     class ServerTimeout < Timeout::Error
+      include Error
     end
 
     module AuthenticationAdapter
