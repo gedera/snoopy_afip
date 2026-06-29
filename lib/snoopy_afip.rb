@@ -23,10 +23,6 @@ module Snoopy
   self.open_timeout ||= 30
   self.read_timeout ||= 30
 
-  def auth_hash
-    {"Token" => Snoopy::TOKEN, "Sign"  => Snoopy::SIGN, "Cuit"  => Snoopy.cuit}
-  end
-
   def bill_types
     [
       ["Factura A", "01"],
