@@ -7,9 +7,8 @@ Gem::Specification.new do |s|
   s.name = "snoopy_afip"
   s.version = Snoopy::VERSION
 
-  s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
+  s.required_ruby_version = ">= 2.5"
   s.authors = ["g.edera"]
-  s.date = "2017-06-29"
   s.description = "Adaptador para Web Service de Facturación Electrónica Argentina (AFIP)"
   s.email = "gab.edera@gmail.com"
   s.files = `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
