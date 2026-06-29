@@ -1,3 +1,5 @@
+require "timeout" # ServerTimeout < Timeout::Error; en Ruby 3.4+ timeout es default gem no autocargado
+
 module Snoopy
   module Exception
 

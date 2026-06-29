@@ -1,32 +1,33 @@
 # Test — snoopy_afip
-> meta: artefacto · RFC-013 · generado arch-structure · enriquecido arch-enrich · anclado a 7813cf2 · cobertura: inventario estructural; §e-§h 4/4
+> meta: artefacto · RFC-013 · generado arch-structure · enriquecido arch-enrich · anclado a 7813cf2 (suite reescrita en fix/specs-and-lock) · cobertura: inventario estructural; §e-§h 4/4
 
 ## 1. Resumen
 
-Suite RSpec en `spec/`. **Estado crítico**: los specs actuales están **desactualizados respecto al código** — referencian una API que ya no existe (`Snoopy::Bill.header`, `Snoopy::Authorizer`, `Snoopy::NullOrInvalidAttribute`, `@bill.net`, `@bill.authorize`, `Snoopy.default_moneda`) y `spec_helper.rb` hace `require 'snoopy'` (el archivo es `snoopy_afip`). No corren verde contra `lib/` actual.
+Suite RSpec en `spec/`, **reescrita contra la API actual y verde** (`21 examples, 0 failures`). Corre bajo **Ruby 2.7.x** (runtime del consumidor `argentina_invoice_service`). En **Ruby 3.x la gema no carga**: el stack de savon 2.12 (httpi 2.x) depende de `kconv` (removido de stdlib en 3.x) y de `Rack::Utils::HeaderHash` (removido en rack 3) → correr en 3.x requiere el upgrade de savon (gated, ver #13/roadmap).
 
 ## 2.a Suites, frameworks y niveles
 
-| framework | subdirectorio | propósito | nivel | tags |
-|---|---|---|---|---|
-| RSpec | `spec/snoopy_afip/bill_spec.rb` | comportamiento de `Bill` (header, cbte_type, iva_sum, autorización) | unit/integration | — |
-| RSpec | `spec/snoopy_afip/authorizer_spec.rb` | lectura de credenciales en init | unit | — |
-| RSpec | `spec/spec_helper.rb` | bootstrap + config global de prueba | — | — |
+| framework | archivo | propósito | nivel |
+|---|---|---|---|
+| RSpec | `spec/snoopy_afip/bill_spec.rb` | `Bill`: cbte_type, iva_sum/total, exchange_rate, receiver_iva_condition_id, estado del resultado, `valid?` | unit |
+| RSpec | `spec/snoopy_afip/authorize_adapter_spec.rb` | `AuthorizeAdapter`: `auth`, y regresión de rescues de parseo (#10/#16) | unit |
+| RSpec | `spec/snoopy_afip/authentication_adapter_spec.rb` | `AuthenticationAdapter`: `build_tra`, credenciales de instancia | unit |
+| RSpec | `spec/snoopy_afip/exceptions_spec.rb` | jerarquía `Snoopy::Exception` + paraguas `Error` (regresión #14) | unit |
+| RSpec | `spec/spec_helper.rb` | bootstrap + config base de homologación | — |
 
 ## 2.b Comando de corrida
 
 ```bash
-bundle exec rspec
+bundle exec rspec    # bajo Ruby 2.7.x
 ```
 
-No hay CI declarado (sin `.github/workflows/`, `.circleci/`, `bin/ci`, `config/ci.rb`). Corrida solo local.
+No hay CI declarado (sin `.github/workflows/`, `.circleci/`, `bin/ci`, `config/ci.rb`). Corrida solo local. Dev-deps de test: `rspec ~> 3.13`, `activesupport` (gemspec); pin `rack ~> 2.2` (Gemfile, requerido por httpi 2.x).
 
 ## 2.c Fixtures / Factories
 
-- Fixtures por path en `spec_helper.rb`: `Snoopy.pkey = "spec/fixtures/pkey"`, `Snoopy.cert = "spec/fixtures/cert.crt"`. **El directorio `spec/fixtures/` no está versionado** (no aparece en `git ls-files`) → los specs no tienen sus fixtures.
-- Sin FactoryBot; sin `spec/support/` versionado (el `Dir[...support...]` no matchea nada).
-- `ENV["CUIT"]` requerida por `spec_helper.rb:16` (usar valor de prueba, nunca CUIT real).
-- URLs de **homologación** AFIP (`wsaahomo`/`wswhomo`) cableadas en el helper.
+- **Sin fixtures en disco.** Los specs son unit puros: construyen `Bill`/adapters con placeholders inline; no requieren `spec/fixtures/pkey`/`cert.crt` ni llamadas reales a AFIP.
+- Sin FactoryBot, sin VCR. Las URLs de homologación se setean en `spec_helper.rb` pero ninguna prueba abre conexión (Savon es lazy salvo el build del cliente, que no conecta).
+- `Bill#valid?` necesita `blank?`/`present?` → `spec_helper` carga `active_support/core_ext/object/blank`.
 
 ## 2.d Configuración de coverage
 
@@ -34,42 +35,40 @@ Ninguna (sin `.simplecov` / `SimpleCov.start`). Sin umbral declarado.
 
 ## 2.e Gaps de cobertura
 
-**Cobertura real efectiva: ~0%.** Los specs no corren contra el código actual (API divergente). Flujos de negocio **sin cobertura ejecutable**:
-- Autenticación WSAA (`authenticate!`, `build_cms`/`build_tra`) — no testeado.
-- Autorización WSFE (`authorize!`, `build_body_request`) — el spec viejo lo intentaba pero contra API inexistente.
-- Parseo en capas de la respuesta AFIP (`parse_*`) — no testeado; es la lógica más frágil (depende del formato de AFIP).
-- Validaciones de `Bill#valid?` — el spec viejo no las cubre.
-- `core_ext` (round_with_precision, deep_symbolize_keys) — no testeado.
+**Cubierto** (unit, sin red): lógica de `Bill` (cálculos, validaciones, mapeos de dominio), jerarquía de excepciones + paraguas, `build_tra`, y el **comportamiento de los rescues de parseo** (no explotan, registran String).
+
+**NO cubierto** (requiere mock de Savon / VCR / homologación real):
+- `authorize!` / `set_bill_number!` / `invoice_informed?` — el camino feliz contra WSFE (no se mockea la respuesta SOAP).
+- `authenticate!` / `build_cms` — firma CMS con cert/pkey reales.
+- `parse_*` con respuestas AFIP **válidas** (solo se testea el path de error).
+- `core_ext` (`round_with_precision`, `deep_symbolize_keys`, `underscore`).
 
 ## 2.f Contract-assessment
 
 | contrato público | test? |
 |---|---|
 | operaciones (RFC-003) | n/a (gema sin superficie) |
-| dependencias consumidas WSAA/WSFE (RFC-018) | **no** — sin mocks de Savon ni VCR; ninguna llamada AFIP ejercitada |
-| errores públicos (RFC-020) | **no** — jerarquía `Snoopy::Exception::*` sin tests |
-
-Ningún contrato público está cubierto. Riesgo alto: un cambio de formato de AFIP no lo detecta ningún test.
+| dependencias consumidas WSAA/WSFE (RFC-018) | **parcial** — `build_tra` sí; las llamadas SOAP no se ejercitan (sin mock/VCR) |
+| errores públicos (RFC-020) | **sí** — jerarquía `Snoopy::Exception::*` + paraguas `Error` + comportamiento de los rescues |
 
 ## 2.g Link a incidente
 
-Ninguno declarado. El diseño "No Explota" (parseo en capas, README §) nació de un incidente real (AFIP cambió la estructura de eventos y "explotaba todo") — narrado en el README pero **sin test de regresión** que lo fije.
+- `exceptions_spec.rb` fija la jerarquía de `ServerTimeout` (regresión de **#14**).
+- `authorize_adapter_spec.rb` fija que los rescues de parseo no explotan y registran String (regresión de **#10/#16** — el diseño "No Explota" que nació de un incidente real con cambios de formato de AFIP).
 
 ## 2.h PII en fixtures
 
-- `spec_helper.rb` referencia `spec/fixtures/pkey` y `spec/fixtures/cert.crt` (**no versionados**). Si se agregan, serían **clave privada + certificado AFIP = secretos**: nunca commitear reales; usar material de homologación descartable.
-- `ENV["CUIT"]`: usar CUIT de prueba, nunca uno real (es dato identificatorio).
-- Sin otros fixtures con PII detectados.
+- Sin fixtures con PII (no hay fixtures en disco). `pkey`/`cert`/`cuit` en specs son placeholders inline (`/tmp/pkey`, `"20111111112"`), nunca material real.
 
 ## 3. Inferencias
 
 | ítem | confidence | a verificar |
 |---|---|---|
-| Specs no ejecutables contra el código actual (API divergente + `require` roto + fixtures ausentes) | declared | la suite es legacy pre-refactor; decidir reescritura o baja |
-| `Gemfile` incluye `ruby-debug` (`require 'ruby-debug'` en helper) | inferred | dep de test posiblemente incompatible con Ruby moderno |
+| La gema no carga en Ruby 3.x (kconv/httpi 2.x, Rack::Utils::HeaderHash/rack 3) | declared | desbloquea con el upgrade de savon a 2.15+ (httpi 4) — gated |
+| El lock está resuelto para Ruby 2.7 (nokogiri 1.15.7, rack 2.2) | declared | un dev en Ruby 3.x no podrá `bundle install` hasta el upgrade |
 
 ## 4. Cobertura y fronteras
 
 - El contenido detallado de cada test queda en el código.
-- Evaluación de gaps/contract/PII → arch-enrich (§e-§h).
-- La divergencia specs↔código es el hallazgo dominante de esta capa: bloquea cualquier afirmación de cobertura real.
+- Falta cobertura de los caminos felices contra AFIP (necesita mock de Savon o VCR) — próximo incremento.
+- La corrida en Ruby 3.x está bloqueada por el stack de dependencias, no por los specs.

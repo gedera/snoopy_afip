@@ -17,7 +17,10 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
   # s.rubygems_version = "1.8.25"
   s.summary = "Adaptador AFIP wsfe."
-  s.test_files = ["spec/snoopy_afip/authorizer_spec.rb", "spec/snoopy_afip/bill_spec.rb", "spec/spec_helper.rb"]
+  s.test_files = Dir["spec/**/*"]
 
   s.add_dependency 'savon', '~> 2.12.1'
+
+  s.add_development_dependency 'rspec', '~> 3.13'
+  s.add_development_dependency 'activesupport' # Bill#valid? usa blank?/present?
 end
