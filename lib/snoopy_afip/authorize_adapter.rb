@@ -114,7 +114,7 @@ module Snoopy
         [obs].flatten.each { |ob| afip_observations[ob[:code]] = ob[:msg] }
       end
     rescue => e
-      errors[:observation_parser] = Snoopy::Exception::AuthorizeAdapter::ObservationParser.new(e.message, e.backtrace)
+      @errors[:observation_parser] = Snoopy::Exception::AuthorizeAdapter::ObservationParser.new(e.message, e.backtrace)
     end
 
     def parse_events(fecae_events)
@@ -122,7 +122,7 @@ module Snoopy
         [events].flatten.each { |event| afip_events[event[:code]] = event[:msg] }
       end
     rescue => e
-      errors[:events_parser] = Snoopy::Exception::AuthorizeAdapter::EventsParser.new(e.message, e.backtrace)
+      @errors[:events_parser] = Snoopy::Exception::AuthorizeAdapter::EventsParser.new(e.message, e.backtrace)
     end
 
     def parse_errors(fecae_errors)
@@ -130,7 +130,7 @@ module Snoopy
         [errores].flatten.each { |error| afip_errors[error[:code]] = error[:msg] }
       end
     rescue => e
-      errors[:error_parser] = Snoopy::Exception::AuthorizeAdapter::ErrorParser.new(e.message, e.backtrace)
+      @errors[:error_parser] = Snoopy::Exception::AuthorizeAdapter::ErrorParser.new(e.message, e.backtrace)
     end
 
     def parse_fecae_solicitar_response
