@@ -1,10 +1,6 @@
 source "http://rubygems.org"
 
 gemspec
-
-# httpi 2.x (vía savon 2.12) usa Rack::Utils::HeaderHash, removido en rack 3.
-# Pin de entorno de test; el consumidor Rails trae su propio rack 2.x.
-gem "rack", "~> 2.2"
 # group :development do
 #   platforms :ruby_18 do
 #     gem "ruby-debug"

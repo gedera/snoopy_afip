@@ -3,7 +3,7 @@
 
 ## 1. Resumen
 
-Suite RSpec en `spec/`, **reescrita contra la API actual y verde** (`21 examples, 0 failures`). Corre bajo **Ruby 2.7.x** (runtime del consumidor `argentina_invoice_service`). En **Ruby 3.x la gema no carga**: el stack de savon 2.12 (httpi 2.x) depende de `kconv` (removido de stdlib en 3.x) y de `Rack::Utils::HeaderHash` (removido en rack 3) → correr en 3.x requiere el upgrade de savon (gated, ver #13/roadmap).
+Suite RSpec en `spec/`, **reescrita contra la API actual y verde** (`21 examples, 0 failures`) bajo **Ruby 3.x**. Tras el upgrade a savon 2.17 (httpi 4, #19) la gema **requiere Ruby ≥ 3.0** (savon 2.15+/httpi 4 lo exigen) y dejó de soportar Ruby 2.7.
 
 ## 2.a Suites, frameworks y niveles
 
@@ -18,10 +18,10 @@ Suite RSpec en `spec/`, **reescrita contra la API actual y verde** (`21 examples
 ## 2.b Comando de corrida
 
 ```bash
-bundle exec rspec    # bajo Ruby 2.7.x
+bundle exec rspec    # bajo Ruby >= 3.0
 ```
 
-No hay CI declarado (sin `.github/workflows/`, `.circleci/`, `bin/ci`, `config/ci.rb`). Corrida solo local. Dev-deps de test: `rspec ~> 3.13`, `activesupport` (gemspec); pin `rack ~> 2.2` (Gemfile, requerido por httpi 2.x).
+No hay CI declarado (sin `.github/workflows/`, `.circleci/`, `bin/ci`, `config/ci.rb`). Corrida solo local. Dev-deps de test: `rspec ~> 3.13`, `activesupport` (gemspec).
 
 ## 2.c Fixtures / Factories
 
@@ -64,8 +64,8 @@ Ninguna (sin `.simplecov` / `SimpleCov.start`). Sin umbral declarado.
 
 | ítem | confidence | a verificar |
 |---|---|---|
-| La gema no carga en Ruby 3.x (kconv/httpi 2.x, Rack::Utils::HeaderHash/rack 3) | declared | desbloquea con el upgrade de savon a 2.15+ (httpi 4) — gated |
-| El lock está resuelto para Ruby 2.7 (nokogiri 1.15.7, rack 2.2) | declared | un dev en Ruby 3.x no podrá `bundle install` hasta el upgrade |
+| La gema requiere Ruby ≥ 3.0 tras el upgrade a savon 2.17 (#19); ya no soporta 2.7 | declared | el consumidor `argentina_invoice_service` (Ruby 2.7.6) debe subir Ruby antes de adoptar la versión nueva |
+| El handshake mTLS contra AFIP con httpi 4 NO se validó en tests (solo el build del cliente) | declared | validar WSAA+WSFE contra homologación con certs reales; revisar `SNOOPY_SSL_VERSION` (default `:TLSv1` desactualizado) |
 
 ## 4. Cobertura y fronteras
 
