@@ -56,9 +56,11 @@ El código nuevo debe venir con tests. La suite (`spec/snoopy_afip/{bill,authori
 
 ## 7. Releases
 
-Usar la skill `/gem-release` (declarada en `skills.yml`) para publicar versiones. La versión vive en `lib/snoopy_afip/version.rb` (`Snoopy::VERSION`).
+La versión vive en `lib/snoopy_afip/version.rb` (`Snoopy::VERSION`).
 
-No hay GitHub Action de release en el repo (no existe `.github/workflows/`). No documentar un pipeline automático que no esté presente.
+**Release automatizado por GitHub Actions** (`.github/workflows/release.yml`): publicar = bump de `version.rb` + commit + `git tag vX.Y.Z` + push del tag → el workflow corre `gem build` + `gem push` a RubyGems. Requiere el secret `RUBYGEMS_API_KEY` en el repo. No hace falta `gem push` manual.
+
+**CI** (`.github/workflows/main.yml`): corre `bundle exec rspec` en cada push a master y PR. Hoy en **Ruby 2.7** (stack savon 2.12); subir a 3.x al mergear el upgrade de savon (#19).
 
 ## 8. Arquitectura
 
