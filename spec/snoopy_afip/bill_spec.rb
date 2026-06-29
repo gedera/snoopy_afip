@@ -1,106 +1,89 @@
-require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
+require File.expand_path(File.dirname(__FILE__) + "/../spec_helper")
 
-describe "Bill" do
-  it "should setup a header hash" do
-    @header = Snoopy::Bill.header(0)
-    @header.size.should == 3
-    ["CantReg", "CbteTipo", "PtoVta"].each do |key|
-      @header.has_key?(key).should == true
+RSpec.describe Snoopy::Bill do
+  def valid_attrs(overrides = {})
+    {
+      cuit:                   "20111111112",
+      sale_point:             "0001",
+      total_net:              100.0,
+      concept:                "Productos",
+      document_type:          "CUIT",
+      document_num:           "30710151543",
+      issuer_iva_cond:        Snoopy::RESPONSABLE_INSCRIPTO,
+      receiver_iva_cond:      :factura_a,
+      receiver_iva_condition: :responsable_inscripto,
+      currency:               :peso,
+      service_date_from:      "20240101",
+      service_date_to:        "20240131",
+      alicivas:               [{ id: 0.21, amount: 21.0, taxeable_base: 100.0 }]
+    }.merge(overrides)
+  end
+
+  describe "#cbte_type" do
+    it "deriva el código del comprobante desde receiver_iva_cond" do
+      expect(described_class.new(valid_attrs).cbte_type).to eq("01")          # BILL_TYPE[:factura_a]
+      expect(described_class.new(valid_attrs(receiver_iva_cond: :factura_b)).cbte_type).to eq("06")
     end
   end
 
-  describe "instance" do
-    before(:each) {@bill = Snoopy::Bill.new}
-
-    it "should initialize according to Snoopy defaults" do
-      @bill.client.class.name.should == "Savon::Client"
-      ["Token", "Sign", "Cuit"].each do |key|
-        @bill.body["Auth"][key].should_not == nil
-      end
-      @bill.documento.should == Snoopy.default_documento
-      @bill.moneda.should == Snoopy.default_moneda
+  describe "#iva_sum y #total" do
+    it "suma las alícuotas y calcula el total neto + IVA" do
+      bill = described_class.new(valid_attrs)
+      expect(bill.iva_sum).to eq(21.0)
+      expect(bill.total).to eq(121.0)
     end
 
-    it "should calculate it's cbte_tipo for Responsable Inscripto" do
-      @bill.iva_cond = :responsable_inscripto
-      @bill.cbte_type.should == "01"
+    it "total es 0 cuando el neto es 0" do
+      expect(described_class.new(valid_attrs(total_net: 0)).total).to eq(0)
+    end
+  end
+
+  describe "#exchange_rate" do
+    it "es 1 para pesos" do
+      expect(described_class.new(valid_attrs(currency: :peso)).exchange_rate).to eq(1)
+    end
+  end
+
+  describe "#receiver_iva_condition_id" do
+    it "mapea la condición de IVA del receptor (RG 5616)" do
+      expect(described_class.new(valid_attrs).receiver_iva_condition_id).to eq("1")
+      expect(described_class.new(valid_attrs(receiver_iva_condition: :consumidor_final)).receiver_iva_condition_id).to eq("5")
     end
 
-    it "should calculate it's cbte_tipo for Consumidor Final" do
-      @bill.iva_cond = :consumidor_final
-      @bill.cbte_type.should == "06"
+    it "es '' cuando no se informó la condición" do
+      expect(described_class.new(valid_attrs(receiver_iva_condition: nil)).receiver_iva_condition_id).to eq("")
+    end
+  end
+
+  describe "estado del resultado" do
+    it "refleja el veredicto de AFIP" do
+      bill = described_class.new(valid_attrs)
+      bill.result = "A"
+      expect(bill.approved?).to be(true)
+      bill.result = "R"
+      expect(bill.rejected?).to be(true)
+      bill.result = "P"
+      expect(bill.partial_approved?).to be(true)
+    end
+  end
+
+  describe "#valid?" do
+    it "es válido con atributos completos y correctos" do
+      bill = described_class.new(valid_attrs)
+      expect(bill.valid?).to be(true)
+      expect(bill.errors).to be_empty
     end
 
-    it "raise error on nil iva cond" do
-      @bill.iva_cond = 12
-      expect{@bill.cbte_type}.to raise_error(Snoopy::NullOrInvalidAttribute)
+    it "marca currency inválida" do
+      bill = described_class.new(valid_attrs(currency: :yen))
+      expect(bill.valid?).to be(false)
+      expect(bill.errors).to have_key(:currency)
     end
 
-    it "should fetch non Peso currency's exchange rate" do
-      @bill.moneda = :dolar
-      @bill.exchange_rate.to_i.should be > 0
-    end
-
-    it "should return 1 for Peso currency" do
-      @bill.moneda = :peso
-      @bill.exchange_rate.should == 1
-    end
-
-    it "should calculate the IVA array values" do
-      @bill.iva_cond = :responsable_inscripto
-      @bill.moneda = :peso
-      @bill.net = 100.89
-      @bill.aliciva_id = 2
-
-      @bill.iva_sum.should be_within(0.05).of(21.18)
-      @bill.total.should be_within(0.05).of(122.07)
-    end
-
-    it "should use give due date an service dates, or todays date" do
-      @bill.net = 100
-      @bill.aliciva_id = 2
-      @bill.doc_num = "30710151543"
-      @bill.iva_cond = :responsable_inscripto
-      @bill.concepto = "Servicios"
-
-      @bill.setup_bill
-
-      detail = @bill.body["FeCAEReq"]["FeDetReq"]["FECAEDetRequest"]
-
-      detail["FchServDesde"].should == Time.new.strftime('%Y%m%d')
-      detail["FchServHasta"].should == Time.new.strftime('%Y%m%d')
-      detail["FchVtoPago"].should   == Time.new.strftime('%Y%m%d')
-
-      @bill.due_date       = Date.new(2011, 12, 10).strftime('%Y%m%d')
-      @bill.fch_serv_desde = Date.new(2011, 11, 01).strftime('%Y%m%d')
-      @bill.fch_serv_hasta = Date.new(2011, 11, 30).strftime('%Y%m%d')
-
-      @bill.setup_bill
-
-      detail = @bill.body["FeCAEReq"]["FeDetReq"]["FECAEDetRequest"]
-
-      detail["FchServDesde"].should == "20111101"
-      detail["FchServHasta"].should == "20111130"
-      detail["FchVtoPago"].should   == "20111210"
-    end
-
-    Snoopy::BILL_TYPE[Snoopy.own_iva_cond].keys.each do |target_iva_cond|
-      it "should authorize a valid bill for #{target_iva_cond.to_s}" do
-        @bill.net = 1000000
-        @bill.aliciva_id = 2
-        @bill.doc_num = "30710151543"
-        @bill.iva_cond = target_iva_cond
-        @bill.concepto = "Servicios"
-
-        @bill.authorized?.should  == false
-        @bill.authorize.should    == true
-        @bill.authorized?.should  == true
-
-        response = @bill.response
-
-        response.length.should     == 28
-        response.cae.length.should == 14
-      end
+    it "marca document_type inválido" do
+      bill = described_class.new(valid_attrs(document_type: "NOPE"))
+      bill.valid?
+      expect(bill.errors).to have_key(:document_type)
     end
   end
 end

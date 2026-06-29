@@ -50,7 +50,9 @@ Framework: **RSpec** (verificado en `spec/spec_helper.rb` con `require 'rspec'` 
 bundle exec rspec
 ```
 
-El código nuevo debe venir con tests. Specs actuales: `spec/snoopy_afip/bill_spec.rb`, `spec/snoopy_afip/authorizer_spec.rb`. `spec/spec_helper.rb` requiere una variable de entorno `CUIT` (usar valores de prueba, nunca CUIT/credenciales reales).
+El código nuevo debe venir con tests. La suite (`spec/snoopy_afip/{bill,authorize_adapter,authentication_adapter,exceptions}_spec.rb`) son unit puros, sin fixtures ni llamadas reales a AFIP; usar placeholders, nunca CUIT/credenciales reales.
+
+**Runtime: la suite corre bajo Ruby 2.7.x** (runtime del consumidor). En Ruby 3.x la gema **no carga** — el stack de savon 2.12 (httpi 2.x) depende de `kconv` y `Rack::Utils::HeaderHash`, removidos en Ruby 3.x / rack 3. Correr en 3.x requiere el upgrade de savon a 2.15+ (ver `docs/test/testing.md`). El `Gemfile.lock` está resuelto para 2.7.
 
 ## 7. Releases
 
