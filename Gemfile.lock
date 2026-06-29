@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    snoopy_afip (4.3.0)
+    snoopy_afip (4.3.1)
       savon (~> 2.12.1)
 
 GEM
