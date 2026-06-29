@@ -9,11 +9,13 @@ Gema cliente SOAP. Una sola dependencia de runtime declarada en el `.gemspec` (`
 
 | nombre | versión | rol |
 |---|---|---|
-| `savon` | `~> 2.12.1` (gemspec) · `2.12.0` (lock) | cliente SOAP — única dep de runtime declarada |
-| `httpi` | `2.4.4` (lock, transitiva) | capa HTTP de savon |
-| `nori` | `2.6.0` (lock, transitiva) | XML→Hash (usado directo en `AuthenticationAdapter`) |
-| `nokogiri` | `1.10.9` (lock, transitiva) | parser XML; usado directo en `build_tra` (`Nokogiri::XML::Builder`) |
-| `gyoku` `akami` `wasabi` `builder` `rack` `socksify` `mini_portile2` | ver lock | transitivas de savon |
+| `savon` | `~> 2.17` (gemspec) · `2.17.3` (lock) | cliente SOAP — única dep de runtime declarada |
+| `httpi` | `4.0.4` (lock, transitiva) | capa HTTP de savon (sobre `faraday`) |
+| `faraday` | `2.14.3` (lock, transitiva) | backend HTTP de httpi 4 |
+| `nori` | `2.7.x` (lock, transitiva) | XML→Hash (usado directo en `AuthenticationAdapter`) |
+| `nokogiri` | `1.19.4` (lock, transitiva) | parser XML; usado directo en `build_tra` (`Nokogiri::XML::Builder`) |
+| `nkf` | `0.3.0` (lock, transitiva) | encoding en httpi 4 (reemplazo del `kconv` removido de stdlib) |
+| `gyoku` `akami` `wasabi` `builder` | ver lock | transitivas de savon |
 | `OpenSSL` (stdlib) | — | firma CMS/PKCS7, generación de clave/CSR |
 | `Timeout` (stdlib) | — | corta llamadas SOAP (`Snoopy::Client#call`) |
 
@@ -39,6 +41,6 @@ flowchart LR
 
 ## 5. Cobertura y fronteras
 
-- **`Gemfile.lock` divergente** (ver `docs/test/` y nota global): el lock fija `snoopy_afip (4.0.1)` mientras `version.rb` dice `4.3.0`, y lista en `PATH specs` deps (`akami`, `nokogiri`, `nori`, `wasabi`) que el `.gemspec` **actual** no declara explícitamente (solo `savon`). El lock parece no regenerado tras cambios de gemspec/versión. Versiones de la tabla tomadas del lock como mejor evidencia disponible, marcadas.
+- **`Gemfile.lock` regenerado** con el stack httpi 4 (savon 2.17). **Requiere Ruby ≥ 3.0** (savon 2.15+/httpi 4/wasabi 5 exigen 3.0). El lock se resuelve para Ruby 3.x.
 - Servicios AFIP externos (WSAA/WSFE): contrato consumido en `docs/consumed/` (RFC-018).
 - Topología upstream de AFIP (infra del organismo) fuera de alcance.

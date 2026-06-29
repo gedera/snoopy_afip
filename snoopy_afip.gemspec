@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.name = "snoopy_afip"
   s.version = Snoopy::VERSION
 
-  s.required_ruby_version = ">= 2.5"
+  s.required_ruby_version = ">= 3.0"
   s.authors = ["g.edera"]
   s.description = "Adaptador para Web Service de Facturación Electrónica Argentina (AFIP)"
   s.email = "gab.edera@gmail.com"
@@ -19,7 +19,7 @@ Gem::Specification.new do |s|
   s.summary = "Adaptador AFIP wsfe."
   s.test_files = Dir["spec/**/*"]
 
-  s.add_dependency 'savon', '~> 2.12.1'
+  s.add_dependency 'savon', '~> 2.17'
 
   s.add_development_dependency 'rspec', '~> 3.13'
   s.add_development_dependency 'activesupport' # Bill#valid? usa blank?/present?
