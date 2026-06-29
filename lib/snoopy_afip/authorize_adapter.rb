@@ -114,7 +114,7 @@ module Snoopy
         [obs].flatten.each { |ob| afip_observations[ob[:code]] = ob[:msg] }
       end
     rescue => e
-      errors << Snoopy::Exception::AuthorizeAdapter::ObservationParser.new(e.message, e.backtrace)
+      @errors[:observation_parser] = Snoopy::Exception::AuthorizeAdapter::ObservationParser.new(e.message, e.backtrace).message
     end
 
     def parse_events(fecae_events)
@@ -122,7 +122,7 @@ module Snoopy
         [events].flatten.each { |event| afip_events[event[:code]] = event[:msg] }
       end
     rescue => e
-      errors << Snoopy::Exception::AuthorizeAdapter::EventsParser.new(e.message, e.backtrace)
+      @errors[:events_parser] = Snoopy::Exception::AuthorizeAdapter::EventsParser.new(e.message, e.backtrace).message
     end
 
     def parse_errors(fecae_errors)
@@ -130,7 +130,7 @@ module Snoopy
         [errores].flatten.each { |error| afip_errors[error[:code]] = error[:msg] }
       end
     rescue => e
-      errors << Snoopy::Exception::AuthorizeAdapter::ErrorParser.new(e.message, e.backtrace)
+      @errors[:error_parser] = Snoopy::Exception::AuthorizeAdapter::ErrorParser.new(e.message, e.backtrace).message
     end
 
     def parse_fecae_solicitar_response
@@ -154,7 +154,7 @@ module Snoopy
         parse_errors(fecae_result[:errors])                       if fecae_result.has_key? :errors
         parse_events(fecae_result[:events])                       if fecae_result.has_key? :events
       rescue => e
-        @errors << Snoopy::Exception::AuthorizeAdapter::FecaeResponseParser.new(e.message, e.backtrace)
+        @errors[:fecae_response_parser] = Snoopy::Exception::AuthorizeAdapter::FecaeResponseParser.new(e.message, e.backtrace).message
       end
     end
 
@@ -179,7 +179,7 @@ module Snoopy
       self.parse_errors(fe_comp_consultar_result[:errors]) if fe_comp_consultar_result and fe_comp_consultar_result.has_key? :errors
       self.parse_events(fe_comp_consultar_result[:events]) if fe_comp_consultar_result and fe_comp_consultar_result.has_key? :events
     rescue => e
-      @errors << Snoopy::Exception::FecompConsultResponseParser.new(e.message, e.backtrace)
+      @errors[:fecomp_consult_response_parser] = Snoopy::Exception::AuthorizeAdapter::FecompConsultResponseParser.new(e.message, e.backtrace).message
     end
 
     def client_configuration
